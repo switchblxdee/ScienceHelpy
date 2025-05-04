@@ -1,4 +1,4 @@
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from pdf_parser import PDFChunker
 from emb_model import create_embeddings
 import os

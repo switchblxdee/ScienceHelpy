@@ -5,7 +5,7 @@ from config import PATH_TO_PDFS
 def RAG_answer(query):
     vectorestorage = prepare_RAG_system(PATH_TO_PDFS)
     retriever = vectorestorage.as_retriever(
-        search_type="similarity",
+        search_type="mmr",
         search_kwargs={"k": 1}
     )
 

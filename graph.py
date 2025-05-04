@@ -9,6 +9,7 @@ from typing import TypedDict, Annotated, List
 class State(TypedDict):
     messages: Annotated[list, add_messages]
     rag_context: List[str]
+    use_internet_search: bool
 
 class GraphLangGraph:
     def __init__(self):
@@ -47,6 +48,7 @@ class GraphLangGraph:
         with open("langgraph_workflow.png", "wb") as f:
             f.write(graph_image)
 
-        response = self.graph.invoke({"messages": user_prompt}, config=self.config)["messages"][-1].content
+        response = self.graph.invoke({"messages": user_prompt}, config=self.config)
+        print(response["messages"][-1].tool_calls)
 
-        return {"messages": response}
+        return {"messages": response["messages"][-1].content}

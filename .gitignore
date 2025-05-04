@@ -1,0 +1,13 @@
+.env
+.env.local
+.env.*
+*.env
+config.json
+secrets.json
+credentials.json
+api_keys.json
+keys.json
+*.key
+*.pem
+*.cert
+*.crt
