@@ -12,7 +12,6 @@ def RAG_answer(query):
     rel_docs = retriever.invoke(query)
     clear_list_of_docs = []
     for doc in rel_docs:
-        print(doc.page_content)
         clear_list_of_docs.append(doc.page_content) 
 
     return clear_list_of_docs
