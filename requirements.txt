@@ -1,0 +1,10 @@
+langchain_community
+langchain_text_splitters
+langchain_groq
+langchain_core
+langchain_huggingface
+langchain_chroma
+langgraph
+python-dotenv
+requests
+PyMuPDF 
