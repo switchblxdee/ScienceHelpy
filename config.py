@@ -1,14 +1,21 @@
-import os
-from dotenv import load_dotenv
+from pathlib import Path
 
-dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-if os.path.exists(dotenv_path):
-    load_dotenv(dotenv_path)
-    PATH_TO_PDFS_URL = os.getenv('PATH_TO_PDFS_URL')
-    PATH_TO_PDFS = os.getenv('PATH_TO_PDFS')
-    MODEL_NAME = os.getenv('MODEL_NAME')
-    GROQ_API = os.getenv('GROQ_API')
-    TAVILY_API = os.getenv('TAVILY_API')
-else:
-    Exception('The path to .env file is not exist')
+
+class Settings(BaseSettings):
+    PATH_TO_PDFS_URL: str
+    PATH_TO_PDFS: Path
+    CHROMA_DB_DIR: Path
+    MODEL_NAME: str
+    GROQ_API: str
+    TAVILY_API: str
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+settings = Settings()

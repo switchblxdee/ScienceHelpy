@@ -1,30 +1,50 @@
-import os 
+import logging
+import os
+from pathlib import Path
+
 import requests
 
-from config import PATH_TO_PDFS
+from config import settings
 
-def download_all_papers(pdf_directory):
-    with open(pdf_directory, "r") as f:
-        file = [line.strip() for line in f]
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
-    for i, name_of_pdf in enumerate(file):
-        path = f"{PATH_TO_PDFS}/{i + 1}.pdf"
+PATH_TO_PDFS = settings.PATH_TO_PDFS
 
-        if not os.path.exists(path):
-            print(f"[INFO] We don't have this file, downloading...")
-            
-            url = name_of_pdf
-            filename = path
-            
+
+def download_all_papers(pdf_list_path: Path) -> None:
+    if not pdf_list_path.exists():
+        logger.error("File with PDF URLs not found: %s", pdf_list_path)
+        return
+
+    urls = [
+        line.strip()
+        for line in pdf_list_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+    os.makedirs(PATH_TO_PDFS, exist_ok=True)
+
+    for index, url in enumerate(urls):
+        dest = PATH_TO_PDFS / f"{index + 1}.pdf"
+
+        if dest.exists():
+            logger.info("File %d already exists: %s", index + 1, dest)
+            continue
+
+        logger.info("Downloading file %d from %s to %s", index + 1, url, dest)
+
+        try:
             response = requests.get(url)
-            
-            if response.status_code == 200:
-                with open(filename, "wb") as file:
-                    file.write(response.content)
-                    print(f"File downloaded in path {filename} as {i + 1}")
-            else:
-                print(f"Can't download. Status code: {response.status_code}")
-                continue
-        else:
-            print(f"[INFO] File {i} in path: {path} is downloaded!")
+            response.raise_for_status()  # Raise an error for bad responses
+        except requests.RequestException as ex:
+            logger.error("Failed to download file %d: %s", index + 1, ex)
+            continue
+
+        try:
+            with open(dest, "wb") as file:
+                file.write(response.content)
+            logger.info("File %d downloaded successfully: %s", index + 1, dest)
+        except IOError as ex:
+            logger.error("Failed to save file %d: %s", index + 1, ex)

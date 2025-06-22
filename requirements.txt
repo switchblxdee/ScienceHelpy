@@ -4,7 +4,8 @@ langchain_groq
 langchain_core
 langchain_huggingface
 langchain_chroma
-langgraph
+langgraph~=0.4.8
 python-dotenv
-requests
-PyMuPDF 
+requests~=2.32.4
+PyMuPDF
+pydantic~=2.11.7

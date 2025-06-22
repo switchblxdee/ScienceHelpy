@@ -1,6 +1,9 @@
 from langchain_huggingface import HuggingFaceEmbeddings
 
-model_name = "sentence-transformers/all-MiniLM-L6-v2"
+# settings.MODEL_NAME mb?
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
-def create_embeddings(model_name=model_name):
-    return HuggingFaceEmbeddings(model_name=model_name)
+
+def create_embeddings(name: str | None = None) -> HuggingFaceEmbeddings:
+    name = name or MODEL_NAME
+    return HuggingFaceEmbeddings(model_name=name)
