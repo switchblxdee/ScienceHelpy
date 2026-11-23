@@ -9,3 +9,4 @@ python-dotenv
 requests~=2.32.4
 PyMuPDF
 pydantic~=2.11.7
+pydantic-settings~=2.10.0

@@ -11,3 +11,6 @@ keys.json
 *.pem
 *.cert
 *.crt
+
+.sciencehelpy/
+__pycache__/

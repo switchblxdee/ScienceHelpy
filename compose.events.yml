@@ -1,0 +1,11 @@
+services:
+  events:
+    build:
+      context: .
+      dockerfile: Dockerfile.events
+    environment:
+      SCIENCEHELPY_EVENTS_DB: /data/events.sqlite3
+    volumes:
+      - event-data:/data
+volumes:
+  event-data:

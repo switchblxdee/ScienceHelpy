@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 from pathlib import Path
@@ -5,6 +7,7 @@ from pathlib import Path
 import requests
 
 from config import settings
+from event_delivery import EventStore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -13,7 +16,10 @@ logger = logging.getLogger(__name__)
 PATH_TO_PDFS = settings.PATH_TO_PDFS
 
 
-def download_all_papers(pdf_list_path: Path) -> None:
+def download_all_papers(
+    pdf_list_path: Path, events: EventStore | None = None
+) -> None:
+    pdf_list_path = Path(pdf_list_path)
     if not pdf_list_path.exists():
         logger.error("File with PDF URLs not found: %s", pdf_list_path)
         return
@@ -33,6 +39,10 @@ def download_all_papers(pdf_list_path: Path) -> None:
             logger.info("File %d already exists: %s", index + 1, dest)
             continue
 
+        paper = {"paper_file": dest.name}
+        if events is not None:
+            events.publish("paperImportRequested", **paper)
+
         logger.info("Downloading file %d from %s to %s", index + 1, url, dest)
 
         try:
@@ -40,6 +50,8 @@ def download_all_papers(pdf_list_path: Path) -> None:
             response.raise_for_status()  # Raise an error for bad responses
         except requests.RequestException as ex:
             logger.error("Failed to download file %d: %s", index + 1, ex)
+            if events is not None:
+                events.publish("paperImportFailed", **paper, reason=type(ex).__name__)
             continue
 
         try:
@@ -48,3 +60,8 @@ def download_all_papers(pdf_list_path: Path) -> None:
             logger.info("File %d downloaded successfully: %s", index + 1, dest)
         except IOError as ex:
             logger.error("Failed to save file %d: %s", index + 1, ex)
+            if events is not None:
+                events.publish("paperImportFailed", **paper, reason=type(ex).__name__)
+        else:
+            if events is not None:
+                events.publish("paperAddedToLibrary", **paper)

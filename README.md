@@ -35,4 +35,8 @@ python main.py
 
 ## Автор
 Гречин Егор, NLP engineer
-Телеграм: [@langchain_community](https://t.me/langchain_community) 
+Телеграм: [@langchain_community](https://t.me/langchain_community)
+
+## Бизнес-события
+
+[Каталог потоков и запуск модуля доставки](docs/event-streams.md)
