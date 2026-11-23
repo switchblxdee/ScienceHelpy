@@ -238,7 +238,7 @@ h1, h2, h3, p { margin-top: 0; }
   transition: background-color 140ms ease-out, border-color 140ms ease-out;
 }
 @keyframes appear { from { opacity: .76; } to { opacity: 1; } }
-.card.enter, .bubble.enter { animation: appear 220ms ease-out both; }
+.card.enter { animation: appear 220ms ease-out both; }
 .theme-switching * { transition: none !important; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 190ms; }
 

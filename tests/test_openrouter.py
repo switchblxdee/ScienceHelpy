@@ -43,4 +43,8 @@ class OpenRouterTest(unittest.TestCase):
             self.assertEqual(url, "https://openrouter.ai/api/v1/chat/completions")
             self.assertEqual(payload["model"], DEFAULT_OPENROUTER_MODEL)
             self.assertFalse(payload["reasoning"]["enabled"])
+            system = payload["messages"][0]
+            self.assertEqual(system["role"], "system")
+            self.assertIn("Ты ScienceHelpy", system["content"])
+            self.assertIn("Тебя разработал Switchblxde", system["content"])
             self.assertIn("Attention aligns words", payload["messages"][-1]["content"])

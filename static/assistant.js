@@ -16,6 +16,10 @@ let loading = false;
 let creating = false;
 let initializing = true;
 let page = 1;
+let shownThread = null;
+let shownTurns = [];
+let shownProgress = "";
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
 function node(tag, text, className) {
   const element = document.createElement(tag);
@@ -122,21 +126,47 @@ function replyBubble(turn) {
 
 function renderConversation(animateReply = false) {
   const turns = active?.turns ?? [];
+  const threadId = active?.id ?? null;
   const current = active && pending.get(active.id);
+  const followBottom = chatScroll.scrollHeight - chatScroll.clientHeight - chatScroll.scrollTop < 72;
+  const replaceHistory = threadId !== shownThread || shownTurns.length > turns.length ||
+    shownTurns.some((turn, index) => turn !== turns[index]);
+  const history = byId("message-history");
+  const progress = byId("message-progress");
+
   byId("welcome").hidden = loading || turns.length > 0 || Boolean(current);
-  const items = turns.flatMap((turn) => [bubble("user", turn.question), replyBubble(turn)]);
-  if (animateReply) items.at(-1)?.classList.add("enter");
-  if (loading) items.push(bubble("reply", "Загружаем историю…"));
-  if (current) {
-    const waiting = bubble("reply", "Ищем ответ в статье…");
-    waiting.classList.add("waiting", "enter");
-    items.push(bubble("user", current), waiting);
+  if (replaceHistory) history.replaceChildren();
+  const added = turns.slice(replaceHistory ? 0 : shownTurns.length);
+  for (const turn of added) {
+    const reply = replyBubble(turn);
+    if (animateReply && turn === added.at(-1)) reply.classList.add("chat-arrival");
+    history.append(bubble("user", turn.question), reply);
   }
-  byId("messages").replaceChildren(...items);
+  shownThread = threadId;
+  shownTurns = turns;
+
+  const nextProgress = loading ? "loading" : current ? "pending:" + current : "";
+  const progressChanged = nextProgress !== shownProgress || replaceHistory;
+  if (progressChanged) {
+    progress.replaceChildren();
+    if (loading) progress.append(bubble("reply", "Загружаем историю…"));
+    if (current) {
+      const waiting = bubble("reply", "Ищем ответ в статье…");
+      waiting.classList.add("waiting", "chat-arrival");
+      progress.append(bubble("user", current), waiting);
+    }
+    shownProgress = nextProgress;
+  }
+
+  if (replaceHistory || (followBottom && (added.length || progressChanged))) {
+    chatScroll.scrollTo({
+      top: chatScroll.scrollHeight,
+      behavior: !replaceHistory && !reducedMotion.matches ? "smooth" : "instant",
+    });
+  }
   question.disabled = loading || creating || Boolean(current);
   byId("send").disabled = question.disabled;
   byId("new-chat").disabled = creating || initializing;
-  chatScroll.scrollTop = chatScroll.scrollHeight;
 }
 
 function updateUrl(thread, push = false) {
@@ -253,7 +283,7 @@ async function send(text) {
     pending.delete(thread.id);
     renderThreadList();
     renderConversation(animateReply);
-    if (active?.id === thread.id && workspace.dataset.activePanel === "conversation") question.focus();
+    if (active?.id === thread.id && workspace.dataset.activePanel === "conversation") question.focus({preventScroll: true});
   }
 }
 
