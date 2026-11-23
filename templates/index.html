@@ -15,58 +15,64 @@
   <header class="masthead">
     <div class="shell nav">
       <a href="/" class="brand"><span class="brand-mark" aria-hidden="true">S</span>ScienceHelpy</a>
-      <nav aria-label="Разделы">
-        <a href="#weekly">Подборка</a><a href="#library">Библиотека</a>
-      </nav>
       <div class="header-actions">
         {% include "theme_toggle.html" %}
-        <a class="button primary" href="{{ url_for('assistant') }}" target="_blank" rel="noopener"><span aria-hidden="true">✦</span> Помощник</a>
+        <a class="button masthead-button" href="{{ url_for('assistant') }}" target="_blank" rel="noopener">Помощник</a>
       </div>
     </div>
   </header>
 
-  <main class="shell">
-    <section class="hero" aria-labelledby="headline">
-      <div class="hero-copy">
-        <h1 id="headline">Библиотека<br>исследований<span>.</span></h1>
-        <p>Следите за обсуждаемыми работами, собирайте свою библиотеку и разбирайте статьи с помощником.</p>
-        <div class="hero-actions">
-          <a class="button hero-primary" href="#weekly">Подборка недели</a>
-          <button type="button" class="button hero-outline" data-upload><span aria-hidden="true">＋</span> Добавить PDF</button>
-        </div>
+  <main class="shell archive">
+    <aside class="archive-index" aria-label="Указатель каталога">
+      <nav class="index-panel" aria-label="Разделы">
+        <h2>Указатель</h2>
+        <ul>
+          <li><a href="#weekly">Подборка недели</a></li>
+          <li><a href="#library">Моя библиотека</a></li>
+        </ul>
+        <button type="button" class="button outline index-upload" data-upload>Добавить PDF</button>
+      </nav>
+      <div class="plot-plate" aria-hidden="true">
+        <canvas class="archive-wave" width="166" height="88"></canvas>
       </div>
-      <div class="hero-art" aria-hidden="true"><canvas class="hero-wave"></canvas></div>
-    </section>
+    </aside>
 
-    <div class="catalog-toolbar">
-      <input id="catalog-filter" class="search" type="search" placeholder="Найти статью по названию, автору или arXiv ID" aria-label="Поиск по каталогу">
-      <input id="pdf" type="file" accept=".pdf,application/pdf" hidden>
-      <p id="upload-status" class="notice" role="status" hidden></p>
+    <div class="archive-content">
+      <section class="archive-intro" aria-labelledby="headline">
+        <h1 id="headline">Библиотека исследований</h1>
+        <p>Научные статьи, личная коллекция PDF и помощник для работы с источниками.</p>
+      </section>
+
+      <div class="catalog-toolbar">
+        <label for="catalog-filter">Поиск по каталогу</label>
+        <input id="catalog-filter" class="search" type="search" placeholder="Название, автор или arXiv ID">
+        <input id="pdf" type="file" accept=".pdf,application/pdf" hidden>
+        <p id="upload-status" class="notice" role="status" hidden></p>
+      </div>
+
+      <section id="weekly" class="section" aria-labelledby="weekly-title">
+        <div class="section-head">
+          <div>
+            <h2 id="weekly-title">Популярное за неделю</h2>
+            <p id="weekly-period">За последнюю завершённую неделю</p>
+          </div>
+          <a class="quiet-link" href="https://huggingface.co/papers" target="_blank" rel="noopener noreferrer">Hugging Face Papers</a>
+        </div>
+        <p id="weekly-status" class="notice" role="status">Загружаем подборку…</p>
+        <ul id="weekly-list" class="cards"></ul>
+        <button type="button" id="show-all" class="button outline" hidden>Показать всю подборку</button>
+      </section>
+
+      <section id="library" class="section library-section" aria-labelledby="library-title">
+        <div class="section-head">
+          <div><h2 id="library-title">Библиотека</h2><p id="library-status" role="status">Загружаем статьи…</p></div>
+          <button type="button" class="button outline" data-upload>Добавить PDF</button>
+        </div>
+        <ul id="library-list" class="library-list"></ul>
+      </section>
     </div>
-
-    <section id="weekly" class="section" aria-labelledby="weekly-title">
-      <div class="section-head">
-        <div>
-          <h2 id="weekly-title">Популярное за неделю</h2>
-          <p id="weekly-period">За последнюю завершённую неделю</p>
-        </div>
-        <a class="quiet-link" href="https://huggingface.co/papers" target="_blank" rel="noopener noreferrer">Hugging Face Papers</a>
-      </div>
-      <p id="weekly-status" class="notice" role="status">Загружаем подборку…</p>
-      <ul id="weekly-list" class="cards"></ul>
-      <button type="button" id="show-all" class="button outline" hidden>Показать всю подборку</button>
-    </section>
-
-    <section id="library" class="section library-section" aria-labelledby="library-title">
-      <div class="section-head">
-        <div><h2 id="library-title">Библиотека</h2><p id="library-status" role="status">Загружаем статьи…</p></div>
-        <button type="button" class="button outline" data-upload><span aria-hidden="true">＋</span> Добавить PDF</button>
-      </div>
-      <ul id="library-list" class="library-list"></ul>
-    </section>
   </main>
 
   <footer class="footer"><div class="shell"><span>ScienceHelpy</span><a href="https://github.com/switchblxdee/ScienceHelpy" target="_blank" rel="noopener noreferrer">Исходный код</a></div></footer>
-
 </body>
 </html>

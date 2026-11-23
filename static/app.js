@@ -116,10 +116,11 @@ function weeklyCard(paper, entering) {
   save.disabled = Boolean(saved);
   const actions = node("div", "", "card-actions");
   actions.append(save, saved ? discussionLink(saved.file) : weeklyDiscussion(paper));
-  card.append(meta, articleTitle(paper, arxivUrl(paper.id)));
-  if (paper.authors) card.append(node("p", paper.authors, "authors"));
-  if (paper.summary) card.append(node("p", paper.summary, "abstract"));
-  card.append(actions);
+  const record = node("div", "", "record");
+  record.append(articleTitle(paper, arxivUrl(paper.id)), meta);
+  if (paper.authors) record.append(node("p", paper.authors, "authors"));
+  if (paper.summary) record.append(node("p", paper.summary, "abstract"));
+  card.append(record, actions);
   return card;
 }
 

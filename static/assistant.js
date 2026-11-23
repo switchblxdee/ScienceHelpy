@@ -95,7 +95,8 @@ function renderThreadList() {
 
 function bubble(role, text) {
   const element = node("div", "", "bubble " + role);
-  element.append(node("p", text));
+  element.append(node("p", role === "user" ? "Ты" : "ScienceHelpy", "speaker"),
+                 node("p", text));
   return element;
 }
 

@@ -15,7 +15,7 @@
     <a href="{{ url_for('index') }}" class="brand"><span class="brand-mark" aria-hidden="true">S</span>ScienceHelpy</a>
     <div class="header-actions">
       {% include "theme_toggle.html" %}
-      <a href="{{ url_for('assistant') }}" class="button outline">Сменить статью</a>
+      <a href="{{ url_for('assistant') }}" class="button masthead-button">Сменить статью</a>
     </div>
   </header>
   <nav class="workspace-tabs" aria-label="Области помощника">
@@ -40,7 +40,6 @@
       </header>
       <div class="chat-scroll" id="chat-scroll">
         <div id="welcome" class="welcome">
-          <div aria-hidden="true" class="assistant-mark">✦</div>
           <h2>Обсудим статью?</h2>
           <p>Спроси про метод, результаты или где в статье обсуждается нужная тема.</p>
           <div class="suggestions" aria-label="Примеры вопросов">
