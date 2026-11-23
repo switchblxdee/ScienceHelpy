@@ -5,20 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Выбор статьи · ScienceHelpy</title>
   <link rel="icon" href="{{ url_for('static', filename='mark.svg') }}" type="image/svg+xml">
+  <script src="{{ url_for('static', filename='theme.js') }}"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='assistant.css') }}">
 </head>
 <body>
   <header class="masthead"><div class="shell nav">
     <a href="{{ url_for('index') }}" class="brand"><span class="brand-mark" aria-hidden="true">S</span>ScienceHelpy</a>
-    <a class="button outline" href="{{ url_for('index') }}">Библиотека</a>
+    <div class="header-actions">
+      {% include "theme_toggle.html" %}
+      <a href="{{ url_for('index') }}" class="button outline">Библиотека</a>
+    </div>
   </div></header>
   <main class="shell picker-page">
     <h1>Помощник по статьям</h1>
     <p>Открой статью, чтобы начать новый чат или вернуться к прошлым обсуждениям.</p>
     {% if error %}<p role="alert" class="notice">{{ error }}</p>{% endif %}
     {% if not papers %}
-      <a class="button blue" href="{{ url_for('index') }}">Открыть каталог</a>
+      <a class="button primary" href="{{ url_for('index') }}">Открыть каталог</a>
     {% else %}
       <ul class="library-list">
         {% for paper in papers %}

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ paper.title }} · ScienceHelpy</title>
   <link rel="icon" href="{{ url_for('static', filename='mark.svg') }}" type="image/svg+xml">
+  <script src="{{ url_for('static', filename='theme.js') }}"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='assistant.css') }}">
   <script defer src="{{ url_for('static', filename='assistant.js') }}"></script>
@@ -12,7 +13,10 @@
 <body class="assistant-page">
   <header class="workspace-header">
     <a href="{{ url_for('index') }}" class="brand"><span class="brand-mark" aria-hidden="true">S</span>ScienceHelpy</a>
-    <a href="{{ url_for('assistant') }}" class="button outline">Сменить статью</a>
+    <div class="header-actions">
+      {% include "theme_toggle.html" %}
+      <a href="{{ url_for('assistant') }}" class="button outline">Сменить статью</a>
+    </div>
   </header>
   <nav class="workspace-tabs" aria-label="Области помощника">
     <button type="button" data-panel="threads" aria-pressed="false">Чаты</button>
@@ -23,7 +27,7 @@
     <aside class="thread-panel" aria-labelledby="thread-title">
       <div class="thread-header">
         <h2 id="thread-title">Чаты по статье</h2>
-        <button class="button blue" type="button" id="new-chat">＋ Новый чат</button>
+        <button class="button primary" type="button" id="new-chat">＋ Новый чат</button>
       </div>
       <p id="threads-status" class="notice" role="status">Загружаем чаты…</p>
       <nav aria-label="Сохранённые чаты"><ul id="thread-list"></ul></nav>
@@ -57,7 +61,7 @@
         <p id="chat-error" class="notice" role="status" hidden></p>
         <div class="composer-row">
           <textarea id="question" maxlength="1500" minlength="3" rows="2" required aria-label="Вопрос по статье" placeholder="Задай вопрос по статье…"></textarea>
-          <button id="send" type="submit" class="button blue">Отправить</button>
+          <button id="send" type="submit" class="button primary">Отправить</button>
         </div>
         <p class="model-info">{{ 'Ответы ИИ по выбранной статье. Проверяй выводы по PDF.' if ai_enabled else 'Поиск по PDF · для ответов ИИ подключи OpenRouter, Ollama или Groq.' }}</p>
       </form>

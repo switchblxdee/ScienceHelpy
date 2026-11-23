@@ -95,8 +95,8 @@ function articleTitle(paper, href) {
 const votesFormatter = new Intl.PluralRules("ru");
 const votesLabels = {one: "голос", few: "голоса", many: "голосов", other: "голосов"};
 
-function weeklyCard(paper) {
-  const card = node("li", "", "card");
+function weeklyCard(paper, entering) {
+  const card = node("li", "", entering ? "card enter" : "card");
   const meta = node("div", "", "card-meta");
   meta.append(node("span", "arXiv:" + paper.id, "badge"),
               node("span", `${paper.upvotes} ${votesLabels[votesFormatter.select(paper.upvotes)]} · ${paper.comments} комм.`));
@@ -136,7 +136,7 @@ function libraryRow(paper) {
   return row;
 }
 
-function renderCatalog() {
+function renderCatalog(animateCards = false) {
   const text = filter.value.trim().toLocaleLowerCase();
   const selected = papers.filter((paper) => matches(paper, text));
   const trending = weekly.papers.filter((paper) => matches(paper, text));
@@ -149,7 +149,7 @@ function renderCatalog() {
   if (weekly.start && weekly.end) {
     byId("weekly-period").textContent = `${dateLabel(weekly.start)} — ${dateLabel(weekly.end)} · Голоса и обсуждения`;
   }
-  byId("weekly-list").replaceChildren(...(expanded ? trending : trending.slice(0, 6)).map(weeklyCard));
+  byId("weekly-list").replaceChildren(...(expanded ? trending : trending.slice(0, 6)).map((paper) => weeklyCard(paper, animateCards)));
   byId("library-list").replaceChildren(...selected.map(libraryRow));
   byId("show-all").hidden = trending.length <= 6;
   byId("show-all").textContent = expanded ? "Свернуть подборку" : `Вся подборка (${trending.length})`;
@@ -176,7 +176,7 @@ async function loadWeekly() {
     weeklyError = error.message;
   } finally {
     feedReady = true;
-    renderCatalog();
+    renderCatalog(true);
   }
 }
 
@@ -200,10 +200,10 @@ async function importWeekly(paper) {
   return pendingImports.get(paper.id);
 }
 
-filter.addEventListener("input", renderCatalog);
+filter.addEventListener("input", () => renderCatalog());
 byId("show-all").addEventListener("click", () => {
   expanded = !expanded;
-  renderCatalog();
+  renderCatalog(expanded);
 });
 for (const item of document.querySelectorAll("[data-upload]")) {
   item.addEventListener("click", () => pdfPicker.click());

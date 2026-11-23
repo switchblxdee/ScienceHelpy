@@ -57,6 +57,7 @@ function showPage(number, fromChat = false) {
     page = number;
     const image = byId("pdf-page");
     image.hidden = false;
+    image.classList.remove("page-enter");
     byId("page-error").hidden = true;
     image.alt = `Страница ${page} из PDF`;
     image.src = `${pdfBase}/page/${page}.png`;
@@ -118,13 +119,18 @@ function replyBubble(turn) {
   return reply;
 }
 
-function renderConversation() {
+function renderConversation(animateReply = false) {
   const turns = active?.turns ?? [];
   const current = active && pending.get(active.id);
   byId("welcome").hidden = loading || turns.length > 0 || Boolean(current);
   const items = turns.flatMap((turn) => [bubble("user", turn.question), replyBubble(turn)]);
+  if (animateReply) items.at(-1)?.classList.add("enter");
   if (loading) items.push(bubble("reply", "Загружаем историю…"));
-  if (current) items.push(bubble("user", current), bubble("reply", "Ищем ответ в статье…"));
+  if (current) {
+    const waiting = bubble("reply", "Ищем ответ в статье…");
+    waiting.classList.add("waiting", "enter");
+    items.push(bubble("user", current), waiting);
+  }
   byId("messages").replaceChildren(...items);
   question.disabled = loading || creating || Boolean(current);
   byId("send").disabled = question.disabled;
@@ -215,6 +221,7 @@ async function send(text) {
   }
   if (!thread || pending.has(thread.id)) return;
   pending.set(thread.id, text);
+  let animateReply = false;
   question.value = "";
   renderConversation();
   try {
@@ -228,6 +235,7 @@ async function send(text) {
       // Another tab load can finish while this turn is in flight.
       if (active.revision === thread.revision) {
         active = {...result, turns: [...active.turns, result.turn]};
+        animateReply = true;
       } else if (active.revision < result.revision) {
         await loadThread(thread.id);
       }
@@ -243,7 +251,7 @@ async function send(text) {
   } finally {
     pending.delete(thread.id);
     renderThreadList();
-    renderConversation();
+    renderConversation(animateReply);
     if (active?.id === thread.id && workspace.dataset.activePanel === "conversation") question.focus();
   }
 }
@@ -293,6 +301,7 @@ byId("page-form").addEventListener("submit", (event) => {
 byId("page-number").addEventListener("change", (event) => showPage(Number(event.target.value)));
 byId("previous-page").addEventListener("click", () => showPage(page - 1));
 byId("next-page").addEventListener("click", () => showPage(page + 1));
+byId("pdf-page").addEventListener("load", (event) => event.target.classList.add("page-enter"));
 byId("pdf-page").addEventListener("error", (event) => {
   event.target.hidden = true;
   byId("page-error").hidden = false;

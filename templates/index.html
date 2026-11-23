@@ -6,8 +6,10 @@
   <meta name="description" content="ScienceHelpy — еженедельная подборка и библиотека научных статей">
   <title>ScienceHelpy — библиотека исследований</title>
   <link rel="icon" href="{{ url_for('static', filename='mark.svg') }}" type="image/svg+xml">
+  <script src="{{ url_for('static', filename='theme.js') }}"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='wave.js') }}"></script>
 </head>
 <body>
   <header class="masthead">
@@ -16,7 +18,10 @@
       <nav aria-label="Разделы">
         <a href="#weekly">Подборка</a><a href="#library">Библиотека</a>
       </nav>
-      <a class="button blue" href="{{ url_for('assistant') }}" target="_blank" rel="noopener"><span aria-hidden="true">✦</span> Помощник</a>
+      <div class="header-actions">
+        {% include "theme_toggle.html" %}
+        <a class="button primary" href="{{ url_for('assistant') }}" target="_blank" rel="noopener"><span aria-hidden="true">✦</span> Помощник</a>
+      </div>
     </div>
   </header>
 
@@ -26,14 +31,11 @@
         <h1 id="headline">Библиотека<br>исследований<span>.</span></h1>
         <p>Следите за обсуждаемыми работами, собирайте свою библиотеку и разбирайте статьи с помощником.</p>
         <div class="hero-actions">
-          <a class="button light" href="#weekly">Подборка недели</a>
+          <a class="button hero-primary" href="#weekly">Подборка недели</a>
           <button type="button" class="button hero-outline" data-upload><span aria-hidden="true">＋</span> Добавить PDF</button>
         </div>
       </div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
-        <div class="star star-one"></div><div class="star star-two"></div><div class="star star-three"></div>
-      </div>
+      <div class="hero-art" aria-hidden="true"><canvas class="hero-wave"></canvas></div>
     </section>
 
     <div class="catalog-toolbar">
