@@ -1,5 +1,6 @@
 """Research workflow shared by the web and console interfaces."""
 
+import logging
 import re
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -9,6 +10,9 @@ import requests
 from config import Settings
 from event_delivery import EventStore
 from library import Library
+
+
+logger = logging.getLogger(__name__)
 
 
 class ProviderError(RuntimeError):
@@ -64,7 +68,8 @@ class Research:
                 try:
                     answer = self._generate(question, sources, history)
                     mode = "generated"
-                except ProviderError:
+                except ProviderError as error:
+                    logger.warning("Generation failed: %s", error)
                     warning = "Модель сейчас недоступна. Ниже показаны фрагменты источников."
         return {"answer": answer, "sources": sources, "mode": mode, "warning": warning, **ids}
 
@@ -115,7 +120,16 @@ class Research:
 
     def _chat(self, messages: list[dict], max_tokens: int) -> str:
         try:
-            if self.settings.ollama_model:
+            if self.settings.openrouter_key:
+                data = post_json(
+                    "https://openrouter.ai/api/v1/chat/completions", self.settings.openrouter_key,
+                    {"model": self.settings.openrouter_model, "stream": False,
+                     "temperature": 0.2, "max_tokens": max_tokens, "messages": messages,
+                     "reasoning": {"enabled": False, "exclude": True}},
+                    timeout=(6, 65),
+                )
+                answer = data["choices"][0]["message"]["content"]
+            elif self.settings.ollama_model:
                 data = post_json(
                     f"{self.settings.ollama_url}/api/chat", "",
                     {"model": self.settings.ollama_model, "stream": False, "messages": messages,

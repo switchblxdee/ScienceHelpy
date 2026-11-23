@@ -6,6 +6,8 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-nvidia/nemotron-3-ultra-550b-a55b:free}
       GROQ_API: ${GROQ_API:-}
       MODEL_NAME: ${MODEL_NAME:-llama-3.3-70b-versatile}
       TAVILY_API: ${TAVILY_API:-}

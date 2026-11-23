@@ -59,7 +59,7 @@
           <textarea id="question" maxlength="1500" minlength="3" rows="2" required aria-label="Вопрос по статье" placeholder="Задай вопрос по статье…"></textarea>
           <button id="send" type="submit" class="button blue">Отправить</button>
         </div>
-        <p class="model-info">{{ 'Ответы ИИ по выбранной статье. Проверяй выводы по PDF.' if ai_enabled else 'Поиск по PDF · генерация ответов требует Ollama или Groq.' }}</p>
+        <p class="model-info">{{ 'Ответы ИИ по выбранной статье. Проверяй выводы по PDF.' if ai_enabled else 'Поиск по PDF · для ответов ИИ подключи OpenRouter, Ollama или Groq.' }}</p>
       </form>
     </section>
     <section class="document-panel" aria-labelledby="document-title">
