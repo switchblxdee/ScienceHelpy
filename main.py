@@ -1,43 +1,48 @@
-import os
+"""ScienceHelpy console interface."""
+
+import argparse
 from uuid import uuid4
 
-from config import settings
+from application import create_services
+from config import Settings
 from download_pdf import download_all_papers
-from event_delivery import EventStore
-from graph import Graph
 
 
-def main():
-    events = EventStore(
-        os.getenv("SCIENCEHELPY_EVENTS_DB", ".sciencehelpy/events.sqlite3")
-    )
-    download_all_papers(settings.PATH_TO_PDFS_URL, events=events)
-    model = Graph()
-    conversation = {"conversation_id": str(uuid4())}
-    events.publish("conversationStarted", **conversation)
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--import-papers", action="store_true", help="Импортировать PDF из papers.txt")
+    args = parser.parse_args()
+    settings = Settings.from_env()
+    library, research, events = create_services(settings)
+    if args.import_papers:
+        try:
+            return int(bool(download_all_papers(settings.paper_list, library)))
+        except OSError as error:
+            parser.exit(1, f"Не удалось открыть список статей: {error}\n")
+    conversation = str(uuid4())
+    events.publish("conversationStarted", conversation_id=conversation)
     try:
-        prompt = "Давай начнем диалог: "
         while True:
-            query = input(prompt)
-            if query == "0":
+            question = input("Ваш вопрос (0 — выход): ").strip()
+            if question == "0":
                 break
-            question = {**conversation, "question_id": str(uuid4())}
-            events.publish("questionSubmitted", **question)
-            try:
-                answer = model.run(user_prompt=query)["messages"][-1].content
-                print(answer)
-            except Exception as error:
-                events.publish(
-                    "answerCouldNotBeProvided", **question, reason=type(error).__name__
-                )
-                raise
-            events.publish("answerProvided", **question)
-            prompt = "Ваше сообщение: "
-    except EOFError:
-        pass
+            if not question:
+                continue
+            result = research.ask(question, conversation)
+            print(result["answer"])
+            if result["warning"]:
+                print(result["warning"])
+            for index, source in enumerate(result["sources"], 1):
+                where = f"{source['file']}, стр. {source['page']}" if "file" in source else source["url"]
+                print(f"\n[{index}] {source['title']} · {where}\n{source['text']}")
+            events.publish("answerProvided", conversation_id=conversation,
+                           question_id=result["question_id"], mode=result["mode"])
+    except (EOFError, KeyboardInterrupt):
+        print()
     finally:
-        events.publish("conversationEnded", **conversation)
+        events.publish("conversationEnded", conversation_id=conversation)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Библиотека научных статей и исследовательский помощник ScienceHelpy">
+  <title>ScienceHelpy — библиотека исследований</title>
+  <link rel="icon" href="{{ url_for('static', filename='mark.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="shell masthead-inner">
+      <a class="brand" href="/">Science<span>Helpy</span></a>
+      <nav aria-label="Навигация">
+        <a href="#library" aria-current="page">Библиотека</a>
+        <a href="#assistant">Помощник</a>
+      </nav>
+      <a class="repo" href="https://github.com/switchblxdee/ScienceHelpy" rel="noopener noreferrer">GitHub</a>
+    </div>
+  </header>
+  <main class="shell">
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <p class="overline">ИССЛЕДОВАТЕЛЬСКИЙ АРХИВ</p>
+        <h1 id="page-title">Библиотека<br>исследований<span>.</span></h1>
+        <p class="intro">Собирайте научные статьи, ищите нужные фрагменты и проверяйте ответы по первоисточникам.</p>
+      </div>
+      <div class="archive-stamp" aria-hidden="true">
+        <span>SCIENCEHELPY / ARCHIVE</span>
+        <svg viewBox="0 0 160 88" fill="none" stroke="currentColor" stroke-width="1">
+          <path d="M2 73H158M17 12V83M2 53H158M2 32H158M2 12H158M47 4V83M77 4V83M107 4V83M137 4V83" opacity=".25"/>
+          <path d="M18 62C31 62 35 51 47 51S64 58 76 50 93 24 107 31 120 54 137 16"/>
+          <circle cx="47" cy="51" r="3" fill="#f7f4ed"/><circle cx="76" cy="50" r="3" fill="#f7f4ed"/><circle cx="107" cy="31" r="3" fill="#f7f4ed"/><circle cx="137" cy="16" r="3" fill="#f7f4ed"/>
+        </svg>
+        <span>PDF · ТЕКСТ · ИСТОЧНИКИ</span>
+      </div>
+    </section>
+
+    <div class="workspace">
+      <section id="library" aria-labelledby="library-title">
+        <div class="section-heading">
+          <div>
+            <p class="overline">КАТАЛОГ</p>
+            <h2 id="library-title">Статьи</h2>
+          </div>
+          <form id="upload-form">
+            <input id="pdf" class="visually-hidden" type="file" accept="application/pdf,.pdf" aria-label="Загрузить PDF">
+            <button id="upload-button" type="button" class="button outline"><span aria-hidden="true">+</span> Добавить PDF</button>
+          </form>
+        </div>
+        <p class="status" id="upload-status" role="status" hidden></p>
+        <div class="catalog-search">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+          <input id="filter" type="search" placeholder="Название, автор или arXiv ID" aria-label="Фильтр статей">
+        </div>
+        <p id="catalog-status" class="catalog-status" role="status">Загружаем библиотеку…</p>
+        <ul id="papers" class="papers" aria-label="Список статей"></ul>
+      </section>
+
+      <section id="assistant" class="assistant" tabindex="-1" aria-labelledby="assistant-title">
+        <div class="assistant-head">
+          <p class="overline">РАБОЧЕЕ ПРОСТРАНСТВО</p>
+          <h2 id="assistant-title">Спросить по статьям</h2>
+          <p>Задайте вопрос. Помощник покажет подходящие фрагменты и ссылки на страницы.</p>
+        </div>
+        <div class="assistant-body">
+          <form id="ask-form">
+            <label for="scope">Где искать</label>
+            <select id="scope" name="scope">
+              <option value="">Во всей библиотеке</option>
+            </select>
+            <label for="question">Вопрос</label>
+            <textarea id="question" name="question" rows="4" minlength="3" maxlength="1500" required placeholder="Например: How does multi-head attention work?"></textarea>
+            <button id="ask-button" class="button primary" type="submit">Найти по статьям</button>
+          </form>
+          <div class="suggestions">
+            <p class="small-label">Примеры запросов</p>
+            <button class="chip" type="button" data-example="How does multi-head attention work?">Multi-head attention</button>
+            <button class="chip" type="button" data-example="What is a residual connection?">Residual connections</button>
+          </div>
+          <p class="mode"><span aria-hidden="true"></span> {{ 'Ответы с Groq и ссылки на источники' if ai_enabled else 'Локальный режим · фрагменты из PDF' }}</p>
+          <div id="result" class="result" aria-live="polite" hidden></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="shell"><span>ScienceHelpy</span><span>Учебный проект · Сервисные приложения</span></div>
+  </footer>
+</body>
+</html>

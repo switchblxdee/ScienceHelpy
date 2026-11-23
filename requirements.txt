@@ -1,12 +1,4 @@
-langchain_community
-langchain_text_splitters
-langchain_groq
-langchain_core
-langchain_huggingface
-langchain_chroma
-langgraph~=0.4.8
-python-dotenv
-requests~=2.32.4
-PyMuPDF
-pydantic~=2.11.7
-pydantic-settings~=2.10.0
+Flask>=3.1,<4
+PyMuPDF>=1.26,<2
+python-dotenv>=1.1,<2
+requests>=2.32,<3

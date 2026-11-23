@@ -1,67 +1,41 @@
-from __future__ import annotations
+"""Import the PDF URLs listed in the local operator's papers.txt."""
 
-import logging
-import os
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import requests
 
-from config import settings
-from event_delivery import EventStore
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from library import InvalidPDF, Library, MAX_PDF_BYTES
 
 
-PATH_TO_PDFS = settings.PATH_TO_PDFS
-
-
-def download_all_papers(
-    pdf_list_path: Path, events: EventStore | None = None
-) -> None:
-    pdf_list_path = Path(pdf_list_path)
-    if not pdf_list_path.exists():
-        logger.error("File with PDF URLs not found: %s", pdf_list_path)
-        return
-
-    urls = [
-        line.strip()
-        for line in pdf_list_path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
-
-    os.makedirs(PATH_TO_PDFS, exist_ok=True)
-
-    for index, url in enumerate(urls):
-        dest = PATH_TO_PDFS / f"{index + 1}.pdf"
-
-        if dest.exists():
-            logger.info("File %d already exists: %s", index + 1, dest)
+def download_all_papers(pdf_list_path: Path, library: Library) -> int:
+    failures = 0
+    urls = [line.strip() for line in pdf_list_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    for index, url in enumerate(urls, 1):
+        name = f"{index}.pdf"
+        if library.pdf_path(name):
             continue
-
-        paper = {"paper_file": dest.name}
-        if events is not None:
-            events.publish("paperImportRequested", **paper)
-
-        logger.info("Downloading file %d from %s to %s", index + 1, url, dest)
-
+        data = bytearray()
         try:
-            response = requests.get(url)
-            response.raise_for_status()  # Raise an error for bad responses
-        except requests.RequestException as ex:
-            logger.error("Failed to download file %d: %s", index + 1, ex)
-            if events is not None:
-                events.publish("paperImportFailed", **paper, reason=type(ex).__name__)
+            if urlsplit(url).scheme not in {"http", "https"}:
+                raise ValueError("Ожидается HTTP или HTTPS")
+            with requests.get(url, timeout=(5, 30), stream=True) as response:
+                response.raise_for_status()
+                for chunk in response.iter_content(chunk_size=65536):
+                    data.extend(chunk)
+                    if len(data) > MAX_PDF_BYTES:
+                        raise ValueError("PDF больше 25 МБ")
+        except (requests.RequestException, ValueError) as error:
+            library.events.publish("paperImportRequested", paper_file=name)
+            library.events.publish("paperImportFailed", paper_file=name, reason=type(error).__name__)
+            failures += 1
+            print(f"{name}: загрузка не удалась ({type(error).__name__})")
             continue
-
         try:
-            with open(dest, "wb") as file:
-                file.write(response.content)
-            logger.info("File %d downloaded successfully: %s", index + 1, dest)
-        except IOError as ex:
-            logger.error("Failed to save file %d: %s", index + 1, ex)
-            if events is not None:
-                events.publish("paperImportFailed", **paper, reason=type(ex).__name__)
+            library.add(bytes(data), name=name)
+        except (InvalidPDF, OSError) as error:
+            failures += 1
+            print(f"{name}: {error}")
         else:
-            if events is not None:
-                events.publish("paperAddedToLibrary", **paper)
+            print(f"{name}: добавлен")
+    return failures
