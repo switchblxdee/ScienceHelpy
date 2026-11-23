@@ -80,9 +80,15 @@
       <div id="chat-empty" class="chat-empty">
         <p id="chat-intro">Выбери статью, чтобы начать диалог.</p>
         <div id="chat-suggestions" class="prompts" hidden>
+          {% if ai_enabled %}
           <button class="prompt" type="button" data-question="О чём эта статья?">О чём статья?</button>
           <button class="prompt" type="button" data-question="В чём основная идея метода?">Основная идея</button>
           <button class="prompt" type="button" data-question="Какие результаты получили авторы?">Результаты</button>
+          {% else %}
+          <button class="prompt" type="button" data-question="abstract">Найти аннотацию</button>
+          <button class="prompt" type="button" data-question="method">Найти описание метода</button>
+          <button class="prompt" type="button" data-question="results">Найти результаты</button>
+          {% endif %}
         </div>
       </div>
       <div id="chat-messages"></div>
