@@ -1,3 +1,16 @@
 **
+!*.py
+!requirements.txt
+!papers.txt
+!pdfs/
+!pdfs/1.pdf
+!pdfs/2.pdf
+!pdfs/3.pdf
+!pdfs/4.pdf
+!pdfs/5.pdf
 !event_delivery/
 !event_delivery/*.py
+!static/
+!static/*
+!templates/
+!templates/*.html

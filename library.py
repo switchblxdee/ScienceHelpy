@@ -3,6 +3,7 @@
 from collections import Counter
 from dataclasses import dataclass
 from hashlib import sha256
+import json
 from math import log
 from pathlib import Path
 import re
@@ -16,6 +17,7 @@ from event_delivery import EventStore
 MAX_PDF_BYTES = 25 * 1024 * 1024
 MAX_PAGES = 300
 PDF_LOCK = RLock()  # PyMuPDF does not support concurrent calls from threads.
+EMPTY_METADATA = ("", "", "")
 STOP_WORDS = set(
     "the and for are with what how does this that which from was were "
     "как что это для где чем или его она они при этих этой".split()
@@ -53,7 +55,7 @@ class IndexedPaper:
     pages: tuple[Page, ...]
 
 
-def read_pdf(data: bytes, name: str, metadata: tuple[str, str, str] = ("", "", "")) -> IndexedPaper:
+def read_pdf(data: bytes, name: str, metadata: tuple[str, str, str] = EMPTY_METADATA) -> IndexedPaper:
     if len(data) > MAX_PDF_BYTES or not data.startswith(b"%PDF-"):
         raise InvalidPDF("Нужен PDF размером до 25 МБ.")
     with PDF_LOCK:
@@ -97,31 +99,51 @@ class Library:
         path = self.path / name
         return path if path.is_file() and not path.is_symlink() else None
 
+    def _metadata(self, path: Path) -> tuple[str, str, str]:
+        if path.name in self.metadata:
+            return self.metadata[path.name]
+        sidecar = path.with_suffix(".meta.json")
+        try:
+            if sidecar.is_symlink() or sidecar.stat().st_size > 4096:
+                return EMPTY_METADATA
+            values = json.loads(sidecar.read_text(encoding="utf-8"))
+            if isinstance(values, list) and len(values) == 3 and all(isinstance(value, str) for value in values):
+                return tuple(values)
+        except (OSError, ValueError):
+            pass
+        return EMPTY_METADATA
+
+    def get(self, name: str) -> IndexedPaper | None:
+        with self._lock:
+            path = self.pdf_path(name)
+            if path is None:
+                self._cache.pop(name, None)
+                return None
+            try:
+                info = path.stat()
+            except OSError:
+                return None
+            version = (info.st_mtime_ns, info.st_size)
+            cached = self._cache.get(name)
+            if cached is not None and cached[0] == version:
+                return cached[1]
+            try:
+                with path.open("rb") as file:
+                    entry = read_pdf(file.read(MAX_PDF_BYTES + 1), name, self._metadata(path))
+            except (InvalidPDF, OSError):
+                self.events.publish("paperPreparationFailed", paper_file=name, reason="unreadable_pdf")
+                entry = None
+            else:
+                self._record_preparation(entry)
+            self._cache[name] = (version, entry)
+            return entry
+
     def entries(self) -> list[IndexedPaper]:
         with self._lock:
-            paths = sorted(p for p in self.path.iterdir() if self.pdf_path(p.name))
-            current = {}
-            for path in paths:
-                try:
-                    info = path.stat()
-                    version = (info.st_mtime_ns, info.st_size)
-                except OSError:
-                    continue
-                cached = self._cache.get(path.name)
-                if cached is not None and cached[0] == version:
-                    current[path.name] = cached
-                    continue
-                try:
-                    with path.open("rb") as file:
-                        entry = read_pdf(file.read(MAX_PDF_BYTES + 1), path.name, self.metadata.get(path.name, ("", "", "")))
-                except (InvalidPDF, OSError):
-                    self.events.publish("paperPreparationFailed", paper_file=path.name, reason="unreadable_pdf")
-                    entry = None
-                else:
-                    self._record_preparation(entry)
-                current[path.name] = (version, entry)
-            self._cache = current
-            return [entry for _, entry in current.values() if entry is not None]
+            names = sorted(path.name for path in self.path.iterdir() if self.pdf_path(path.name))
+            for removed in self._cache.keys() - set(names):
+                del self._cache[removed]
+            return [entry for name in names if (entry := self.get(name)) is not None]
 
     def _record_preparation(self, entry: IndexedPaper) -> None:
         name = entry.paper.file
@@ -131,30 +153,22 @@ class Library:
         else:
             self.events.publish("paperPreparationFailed", paper_file=name, reason="no_text")
 
-    def add(self, data: bytes, name: str | None = None) -> tuple[Paper, bool]:
+    def add(self, data: bytes, name: str | None = None,
+            metadata: tuple[str, str, str] | None = None) -> tuple[Paper, bool]:
         name = name or f"{sha256(data).hexdigest()[:24]}.pdf"
         if not re.fullmatch(r"[a-zA-Z0-9_-]+\.pdf", name):
             raise InvalidPDF("Недопустимое имя PDF.")
         with self._lock:
             path = self.path / name
-            cached = self._cache.get(name)
-            if cached and cached[1] is not None and self.pdf_path(name):
-                return cached[1].paper, False
-            if self.pdf_path(name):
-                with path.open("rb") as existing:
-                    entry = read_pdf(existing.read(MAX_PDF_BYTES + 1), name, self.metadata.get(name, ("", "", "")))
-                return entry.paper, False
+            existing = self.get(name)
+            if existing is not None:
+                return existing.paper, False
             self.events.publish("paperImportRequested", paper_file=name)
             try:
-                entry = read_pdf(data, name, self.metadata.get(name, ("", "", "")))
-                with NamedTemporaryFile(dir=self.path, delete=False) as file:
-                    temporary = Path(file.name)
-                    try:
-                        file.write(data)
-                        file.close()
-                        temporary.replace(path)
-                    finally:
-                        temporary.unlink(missing_ok=True)
+                entry = read_pdf(data, name, metadata or self._metadata(path))
+                if metadata:
+                    atomic_write(path.with_suffix(".meta.json"), json.dumps(metadata).encode())
+                atomic_write(path, data)
             except (InvalidPDF, OSError) as error:
                 self.events.publish("paperImportFailed", paper_file=name, reason=type(error).__name__)
                 raise
@@ -168,8 +182,8 @@ class Library:
         terms = set(tokens(query))
         if not terms:
             return []
-        pages = [(entry.paper, page) for entry in self.entries()
-                 if file is None or entry.paper.file == file for page in entry.pages]
+        entries = [self.get(file)] if file else self.entries()
+        pages = [(entry.paper, page) for entry in entries if entry for page in entry.pages]
         frequency = Counter(term for _, page in pages for term in terms if term in page.words)
         ranked = []
         for paper, page in pages:
@@ -184,6 +198,16 @@ class Library:
             for _, paper, page in ranked[:limit]
         ]
 
+    def overview(self, file: str) -> list[dict]:
+        entry = self.get(file)
+        if not entry:
+            return []
+        return [
+            {"file": file, "title": entry.paper.title, "page": page.number,
+             "text": excerpt(page.text, set(), 1600)}
+            for page in entry.pages[:3]
+        ]
+
 
 def excerpt(value: str, terms: set[str], length: int = 880) -> str:
     match = next((match for match in re.finditer(r"[^\W_]+", value)
@@ -191,3 +215,14 @@ def excerpt(value: str, terms: set[str], length: int = 880) -> str:
     start = max(0, match.start() - 180) if match else 0
     end = start + length
     return ("…" if start else "") + value[start:end] + ("…" if end < len(value) else "")
+
+
+def atomic_write(path: Path, data: bytes) -> None:
+    with NamedTemporaryFile(dir=path.parent, delete=False) as file:
+        temporary = Path(file.name)
+        try:
+            file.write(data)
+            file.close()
+            temporary.replace(path)
+        finally:
+            temporary.unlink(missing_ok=True)

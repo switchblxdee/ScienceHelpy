@@ -1,0 +1,27 @@
+services:
+  web:
+    image: sciencehelpy:local
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      GROQ_API: ${GROQ_API:-}
+      MODEL_NAME: ${MODEL_NAME:-llama-3.3-70b-versatile}
+      TAVILY_API: ${TAVILY_API:-}
+      SCIENCEHELPY_PUBLIC_URL: ${SCIENCEHELPY_PUBLIC_URL:-}
+      SCIENCEHELPY_OLLAMA_MODEL: ${SCIENCEHELPY_OLLAMA_MODEL:-}
+      SCIENCEHELPY_OLLAMA_URL: ${SCIENCEHELPY_OLLAMA_URL:-http://127.0.0.1:11434}
+    volumes:
+      - papers:/app/pdfs
+      - data:/data
+  weekly:
+    image: sciencehelpy:local
+    build: .
+    restart: unless-stopped
+    command: ["python", "-m", "weekly", "--watch"]
+    volumes:
+      - data:/data
+volumes:
+  papers:
+  data:

@@ -17,6 +17,13 @@ class Settings:
     model: str
     groq_key: str
     tavily_key: str
+    ollama_model: str = ""
+    ollama_url: str = "http://127.0.0.1:11434"
+    public_url: str = ""
+
+    @property
+    def ai_enabled(self) -> bool:
+        return bool(self.groq_key or self.ollama_model)
 
     @classmethod
     def from_env(cls):
@@ -27,4 +34,7 @@ class Settings:
             model=os.getenv("MODEL_NAME", "llama-3.3-70b-versatile"),
             groq_key=os.getenv("GROQ_API", ""),
             tavily_key=os.getenv("TAVILY_API", ""),
+            ollama_model=os.getenv("SCIENCEHELPY_OLLAMA_MODEL", "").strip(),
+            ollama_url=os.getenv("SCIENCEHELPY_OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/"),
+            public_url=os.getenv("SCIENCEHELPY_PUBLIC_URL", "").rstrip("/"),
         )

@@ -2,3 +2,4 @@ Flask>=3.1,<4
 PyMuPDF>=1.26,<2
 python-dotenv>=1.1,<2
 requests>=2.32,<3
+gunicorn>=23,<24
