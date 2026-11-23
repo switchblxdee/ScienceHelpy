@@ -1,11 +1,13 @@
 <!doctype html>
-<html lang="ru">
+<html lang="{{ lang }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="ScienceHelpy — еженедельная подборка и библиотека научных статей">
-  <title>ScienceHelpy — библиотека исследований</title>
+  <meta name="description" content="{{ t('ScienceHelpy — еженедельная подборка и библиотека научных статей') }}">
+  <title>{{ t('ScienceHelpy — библиотека исследований') }}</title>
   <link rel="icon" href="{{ url_for('static', filename='mark.svg') }}" type="image/svg+xml">
+  <script type="application/json" id="ui-strings">{{ ui_strings|tojson }}</script>
+  <script defer src="{{ url_for('static', filename='i18n.js') }}"></script>
   <script src="{{ url_for('static', filename='theme.js') }}"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script defer src="{{ url_for('static', filename='app.js') }}"></script>
@@ -16,21 +18,22 @@
     <div class="shell nav">
       <a href="/" class="brand"><span class="brand-mark" aria-hidden="true">S</span>ScienceHelpy</a>
       <div class="header-actions">
-        {% include "theme_toggle.html" %}
-        <a class="button masthead-button" href="{{ url_for('assistant') }}" target="_blank" rel="noopener">Помощник</a>
+        {% include "language.html" %}
+      {% include "theme_toggle.html" %}
+        <a class="button masthead-button" href="{{ url_for('assistant') }}" target="_blank" rel="noopener">{{ t('Помощник') }}</a>
       </div>
     </div>
   </header>
 
   <main class="shell archive">
-    <aside class="archive-index" aria-label="Указатель каталога">
-      <nav class="index-panel" aria-label="Разделы">
-        <h2>Указатель</h2>
+    <aside class="archive-index" aria-label="{{ t('Указатель каталога') }}">
+      <nav class="index-panel" aria-label="{{ t('Разделы') }}">
+        <h2>{{ t('Указатель') }}</h2>
         <ul>
-          <li><a href="#weekly">Подборка недели</a></li>
-          <li><a href="#library">Моя библиотека</a></li>
+          <li><a href="#weekly">{{ t('Подборка недели') }}</a></li>
+          <li><a href="#library">{{ t('Моя библиотека') }}</a></li>
         </ul>
-        <button type="button" class="button outline index-upload" data-upload>Добавить PDF</button>
+        <button type="button" class="button outline index-upload" data-upload>{{ t('Добавить PDF') }}</button>
       </nav>
       <div class="plot-plate" aria-hidden="true">
         <canvas class="archive-wave" width="166" height="88"></canvas>
@@ -39,40 +42,51 @@
 
     <div class="archive-content">
       <section class="archive-intro" aria-labelledby="headline">
-        <h1 id="headline">Библиотека исследований</h1>
-        <p>Научные статьи, личная коллекция PDF и помощник для работы с источниками.</p>
+        <h1 id="headline">{{ t('Библиотека исследований') }}</h1>
+        <p>{{ t('Научные статьи, личная коллекция PDF и помощник для работы с источниками.') }}</p>
       </section>
 
       <div class="catalog-toolbar">
-        <label for="catalog-filter">Поиск по каталогу</label>
-        <input id="catalog-filter" class="search" type="search" placeholder="Название, автор или arXiv ID">
+        <label for="catalog-filter">{{ t('Поиск по каталогу') }}</label>
+        <input id="catalog-filter" class="search" type="search" placeholder="{{ t('Название, автор или arXiv ID') }}">
         <input id="pdf" type="file" accept=".pdf,application/pdf" hidden>
         <p id="upload-status" class="notice" role="status" hidden></p>
       </div>
 
+      <form class="arxiv-form" id="arxiv-import">
+        <label for="arxiv-reference">{{ t('arXiv ID или ссылка') }}</label>
+        <div class="arxiv-controls">
+          <input id="arxiv-reference" class="search" name="reference" type="text" required maxlength="350"
+                 placeholder="1706.03762" autocomplete="off" spellcheck="false">
+          <button type="submit" class="button outline">{{ t('Найти и скачать с arXiv') }}</button>
+        </div>
+        <p class="notice" id="arxiv-status" role="status" hidden></p>
+        <div class="card-actions" id="arxiv-result" hidden></div>
+      </form>
+
       <section id="weekly" class="section" aria-labelledby="weekly-title">
         <div class="section-head">
           <div>
-            <h2 id="weekly-title">Популярное за неделю</h2>
-            <p id="weekly-period">За последнюю завершённую неделю</p>
+            <h2 id="weekly-title">{{ t('Популярное за неделю') }}</h2>
+            <p id="weekly-period">{{ t('За последнюю завершённую неделю') }}</p>
           </div>
           <a class="quiet-link" href="https://huggingface.co/papers" target="_blank" rel="noopener noreferrer">Hugging Face Papers</a>
         </div>
-        <p id="weekly-status" class="notice" role="status">Загружаем подборку…</p>
+        <p id="weekly-status" class="notice" role="status">{{ t('Загружаем подборку…') }}</p>
         <ul id="weekly-list" class="cards"></ul>
-        <button type="button" id="show-all" class="button outline" hidden>Показать всю подборку</button>
+        <button type="button" id="show-all" class="button outline" hidden>{{ t('Показать всю подборку') }}</button>
       </section>
 
       <section id="library" class="section library-section" aria-labelledby="library-title">
         <div class="section-head">
-          <div><h2 id="library-title">Библиотека</h2><p id="library-status" role="status">Загружаем статьи…</p></div>
-          <button type="button" class="button outline" data-upload>Добавить PDF</button>
+          <div><h2 id="library-title">{{ t('Библиотека') }}</h2><p id="library-status" role="status">{{ t('Загружаем статьи…') }}</p></div>
+          <button type="button" class="button outline" data-upload>{{ t('Добавить PDF') }}</button>
         </div>
         <ul id="library-list" class="library-list"></ul>
       </section>
     </div>
   </main>
 
-  <footer class="footer"><div class="shell"><span>ScienceHelpy</span><a href="https://github.com/switchblxdee/ScienceHelpy" target="_blank" rel="noopener noreferrer">Исходный код</a></div></footer>
+  <footer class="footer"><div class="shell"><span>ScienceHelpy</span><a href="https://github.com/switchblxdee/ScienceHelpy" target="_blank" rel="noopener noreferrer">{{ t('Исходный код') }}</a></div></footer>
 </body>
 </html>

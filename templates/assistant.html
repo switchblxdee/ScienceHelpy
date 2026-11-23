@@ -1,10 +1,12 @@
 <!doctype html>
-<html lang="ru">
+<html lang="{{ lang }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ paper.title }} · ScienceHelpy</title>
   <link rel="icon" href="{{ url_for('static', filename='mark.svg') }}" type="image/svg+xml">
+  <script type="application/json" id="ui-strings">{{ ui_strings|tojson }}</script>
+  <script defer src="{{ url_for('static', filename='i18n.js') }}"></script>
   <script src="{{ url_for('static', filename='theme.js') }}"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='assistant.css') }}">
@@ -14,23 +16,24 @@
   <header class="workspace-header">
     <a href="{{ url_for('index') }}" class="brand"><span class="brand-mark" aria-hidden="true">S</span>ScienceHelpy</a>
     <div class="header-actions">
+      {% include "language.html" %}
       {% include "theme_toggle.html" %}
-      <a href="{{ url_for('assistant') }}" class="button masthead-button">Сменить статью</a>
+      <a href="{{ url_for('assistant') }}" class="button masthead-button">{{ t('Сменить статью') }}</a>
     </div>
   </header>
-  <nav class="workspace-tabs" aria-label="Области помощника">
-    <button type="button" data-panel="threads" aria-pressed="false">Чаты</button>
-    <button type="button" data-panel="conversation" aria-pressed="true">Обсуждение</button>
+  <nav class="workspace-tabs" aria-label="{{ t('Области помощника') }}">
+    <button type="button" data-panel="threads" aria-pressed="false">{{ t('Чаты') }}</button>
+    <button type="button" data-panel="conversation" aria-pressed="true">{{ t('Обсуждение') }}</button>
     <button type="button" data-panel="document" aria-pressed="false">PDF</button>
   </nav>
   <main id="workspace" data-paper="{{ paper.file }}" data-pages="{{ paper.page_count }}" data-active-panel="conversation">
     <aside class="thread-panel" aria-labelledby="thread-title">
       <div class="thread-header">
-        <h2 id="thread-title">Чаты по статье</h2>
-        <button class="button primary" type="button" id="new-chat">＋ Новый чат</button>
+        <h2 id="thread-title">{{ t('Чаты по статье') }}</h2>
+        <button class="button primary" type="button" id="new-chat">＋ {{ t('Новый чат') }}</button>
       </div>
-      <p id="threads-status" class="notice" role="status">Загружаем чаты…</p>
-      <nav aria-label="Сохранённые чаты"><ul id="thread-list"></ul></nav>
+      <p id="threads-status" class="notice" role="status">{{ t('Загружаем чаты…') }}</p>
+      <nav aria-label="{{ t('Сохранённые чаты') }}"><ul id="thread-list"></ul></nav>
     </aside>
     <section class="conversation-panel" aria-labelledby="paper-title">
       <header class="conversation-header">
@@ -40,17 +43,17 @@
       </header>
       <div class="chat-scroll" id="chat-scroll">
         <div id="welcome" class="welcome">
-          <h2>Обсудим статью?</h2>
-          <p>Спроси про метод, результаты или где в статье обсуждается нужная тема.</p>
-          <div class="suggestions" aria-label="Примеры вопросов">
+          <h2>{{ t('Обсудим статью?') }}</h2>
+          <p>{{ t('Спроси про метод, результаты или где в статье обсуждается нужная тема.') }}</p>
+          <div class="suggestions" aria-label="{{ t('Примеры вопросов') }}">
             {% if ai_enabled %}
-            <button type="button" data-question="О чём эта статья?">О чём статья?</button>
-            <button type="button" data-question="В чём основная идея метода?">Основная идея</button>
-            <button type="button" data-question="Какие результаты получили авторы?">Результаты</button>
+            <button type="button" data-question="{{ t('О чём эта статья?') }}">{{ t('О чём статья?') }}</button>
+            <button type="button" data-question="{{ t('В чём основная идея метода?') }}">{{ t('Основная идея') }}</button>
+            <button type="button" data-question="{{ t('Какие результаты получили авторы?') }}">{{ t('Результаты') }}</button>
             {% else %}
-            <button type="button" data-question="abstract">Найти аннотацию</button>
-            <button type="button" data-question="method">Найти описание метода</button>
-            <button type="button" data-question="results">Найти результаты</button>
+            <button type="button" data-question="abstract">{{ t('Найти аннотацию') }}</button>
+            <button type="button" data-question="method">{{ t('Найти описание метода') }}</button>
+            <button type="button" data-question="results">{{ t('Найти результаты') }}</button>
             {% endif %}
           </div>
         </div>
@@ -62,27 +65,27 @@
       <form id="ask-form" class="composer">
         <p id="chat-error" class="notice" role="status" hidden></p>
         <div class="composer-row">
-          <textarea id="question" maxlength="1500" minlength="3" rows="2" required aria-label="Вопрос по статье" placeholder="Задай вопрос по статье…"></textarea>
-          <button id="send" type="submit" class="button primary">Отправить</button>
+          <textarea id="question" maxlength="1500" minlength="3" rows="2" required aria-label="{{ t('Вопрос по статье') }}" placeholder="{{ t('Задай вопрос по статье…') }}"></textarea>
+          <button id="send" type="submit" class="button primary">{{ t('Отправить') }}</button>
         </div>
-        <p class="model-info">{{ 'Ответы ИИ по выбранной статье. Проверяй выводы по PDF.' if ai_enabled else 'Поиск по PDF · для ответов ИИ подключи OpenRouter, Ollama или Groq.' }}</p>
+        <p class="model-info">{{ t('Ответы ИИ по выбранной статье. Проверяй выводы по PDF.' if ai_enabled else 'Поиск по PDF · для ответов ИИ подключи OpenRouter, Ollama или Groq.') }}</p>
       </form>
     </section>
     <section class="document-panel" aria-labelledby="document-title">
       <header class="document-header">
-        <h2 id="document-title">PDF статьи</h2>
-        <a href="{{ url_for('pdf', name=paper.file) }}" target="_blank" rel="noopener" id="open-pdf">Открыть оригинал</a>
+        <h2 id="document-title">{{ t('PDF статьи') }}</h2>
+        <a href="{{ url_for('pdf', name=paper.file) }}" target="_blank" rel="noopener" id="open-pdf">{{ t('Открыть оригинал') }}</a>
       </header>
-      <form id="page-form" class="page-controls" aria-label="Навигация по PDF">
-        <button type="button" class="button outline" id="previous-page" aria-label="Предыдущая страница" disabled>‹</button>
-        <label for="page-number">Страница</label>
+      <form id="page-form" class="page-controls" aria-label="{{ t('Навигация по PDF') }}">
+        <button type="button" class="button outline" id="previous-page" aria-label="{{ t('Предыдущая страница') }}" disabled>‹</button>
+        <label for="page-number">{{ t('Страница') }}</label>
         <input type="number" inputmode="numeric" id="page-number" min="1" max="{{ paper.page_count }}" value="1">
-        <span>из {{ paper.page_count }}</span>
-        <button type="button" class="button outline" id="next-page" aria-label="Следующая страница" {% if paper.page_count == 1 %}disabled{% endif %}>›</button>
+        <span>{{ t('из') }} {{ paper.page_count }}</span>
+        <button type="button" class="button outline" id="next-page" aria-label="{{ t('Следующая страница') }}" {% if paper.page_count == 1 %}disabled{% endif %}>›</button>
       </form>
       <div class="document-scroll" id="document-scroll">
-        <p id="page-error" class="notice" role="status" hidden>Не удалось показать страницу. PDF доступен по ссылке «Открыть оригинал».</p>
-        <img id="pdf-page" alt="Страница 1 из PDF" width="700" height="990" src="{{ url_for('pdf_page', name=paper.file, number=1) }}">
+        <p id="page-error" class="notice" role="status" hidden>{{ t('Не удалось показать страницу. PDF доступен по ссылке «Открыть оригинал».') }}</p>
+        <img id="pdf-page" alt="{{ t('Страница {page} из PDF', page=1) }}" width="700" height="990" src="{{ url_for('pdf_page', name=paper.file, number=1) }}">
       </div>
     </section>
   </main>

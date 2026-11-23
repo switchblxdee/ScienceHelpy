@@ -3,6 +3,7 @@
 import json
 import logging
 import re
+from threading import local
 from urllib.parse import urlsplit
 from uuid import uuid4
 
@@ -14,6 +15,7 @@ from library import Library
 
 
 logger = logging.getLogger(__name__)
+_connections = local()
 
 
 class ProviderError(RuntimeError):
@@ -68,6 +70,16 @@ class Research:
         if SOCIAL.fullmatch(question.strip().rstrip("!?.,…").strip()):
             return False, ""
         if not file or not self.settings.ai_enabled:
+            return True, ""
+        normalized = question.strip().lower().rstrip("!?.,…")
+        if normalized in {"what is this paper about", "summarize this paper"}:
+            return True, "abstract introduction"
+        # Direct English citations can use the original search terms immediately.
+        if not re.search(r"[^\x00-\x7f]", question) and re.match(
+            r"(?:what|which|how|why|where|when|explain|describe|find|show)\b.*"
+            r"\b(?:in|from|according to) (?:this|the selected) (?:paper|article)\b",
+            question, re.IGNORECASE,
+        ):
             return True, ""
         messages = [
             {"role": "system", "content":
@@ -222,7 +234,9 @@ def safe_link(url: str) -> bool:
 
 def post_json(url: str, key: str, payload: dict, timeout: tuple[int, int] = (5, 30)) -> dict:
     try:
-        response = requests.post(url, headers={"Authorization": f"Bearer {key}"} if key else {},
+        if not hasattr(_connections, "session"):
+            _connections.session = requests.Session()
+        response = _connections.session.post(url, headers={"Authorization": f"Bearer {key}"} if key else {},
                                  json=payload, timeout=timeout, allow_redirects=False)
         if response.status_code != 200:
             raise ProviderError(f"Provider returned HTTP {response.status_code}")

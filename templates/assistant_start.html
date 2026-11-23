@@ -1,10 +1,12 @@
 <!doctype html>
-<html lang="ru">
+<html lang="{{ lang }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Выбор статьи · ScienceHelpy</title>
+  <title>{{ t('Выбор статьи · ScienceHelpy') }}</title>
   <link rel="icon" href="{{ url_for('static', filename='mark.svg') }}" type="image/svg+xml">
+  <script type="application/json" id="ui-strings">{{ ui_strings|tojson }}</script>
+  <script defer src="{{ url_for('static', filename='i18n.js') }}"></script>
   <script src="{{ url_for('static', filename='theme.js') }}"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='assistant.css') }}">
@@ -13,22 +15,23 @@
   <header class="masthead"><div class="shell nav">
     <a href="{{ url_for('index') }}" class="brand"><span class="brand-mark" aria-hidden="true">S</span>ScienceHelpy</a>
     <div class="header-actions">
+      {% include "language.html" %}
       {% include "theme_toggle.html" %}
-      <a href="{{ url_for('index') }}" class="button outline">Библиотека</a>
+      <a href="{{ url_for('index') }}" class="button outline">{{ t('Библиотека') }}</a>
     </div>
   </div></header>
   <main class="shell picker-page">
-    <h1>Помощник по статьям</h1>
-    <p>Открой статью, чтобы начать новый чат или вернуться к прошлым обсуждениям.</p>
+    <h1>{{ t('Помощник по статьям') }}</h1>
+    <p>{{ t('Открой статью, чтобы начать новый чат или вернуться к прошлым обсуждениям.') }}</p>
     {% if error %}<p role="alert" class="notice">{{ error }}</p>{% endif %}
     {% if not papers %}
-      <a class="button primary" href="{{ url_for('index') }}">Открыть каталог</a>
+      <a class="button primary" href="{{ url_for('index') }}">{{ t('Открыть каталог') }}</a>
     {% else %}
       <ul class="library-list">
         {% for paper in papers %}
         <li class="library-row">
-          <div><h2>{{ paper.title }}</h2><p class="authors">{{ paper.authors or ('PDF · ' ~ paper.page_count ~ ' стр.') }}</p></div>
-          <a class="button outline" href="{{ url_for('assistant_paper', name=paper.file) }}">К обсуждению</a>
+          <div><h2>{{ paper.title }}</h2><p class="authors">{{ paper.authors or ('PDF · ' ~ t('{count} стр.', count=paper.page_count)) }}</p></div>
+          <a class="button outline" href="{{ url_for('assistant_paper', name=paper.file) }}">{{ t('К обсуждению') }}</a>
         </li>
         {% endfor %}
       </ul>

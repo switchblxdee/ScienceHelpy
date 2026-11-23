@@ -81,7 +81,7 @@ class WebTest(unittest.TestCase):
         search = requests.Response()
         search.status_code = 200
         search._content = b'{"results":[{"title":"Research","url":"https://example.org/paper","content":"Evidence."}]}'
-        with patch("research.requests.post", side_effect=[search, requests.Timeout]) as provider:
+        with patch("research.requests.Session.post", side_effect=[search, requests.Timeout]) as provider:
             response = client.post("/api/ask", json={"question": "attention"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["mode"], "extracts")

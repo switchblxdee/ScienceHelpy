@@ -269,3 +269,28 @@ h1, h2, h3, p { margin-top: 0; }
   html { scroll-behavior: auto; }
   *,*::before,*::after { animation: none !important; transition: none !important; }
 }
+
+
+.language-switch { display: flex; gap: 2px; }
+.language-switch a {
+  border: 1px solid transparent;
+  padding: 4px 5px;
+  color: var(--accent);
+  font: bold .875rem/1.35 var(--mono);
+  text-decoration: none;
+}
+.masthead .language-switch a, .workspace-header .language-switch a { color: #fff7ed; }
+.language-switch a:hover { text-decoration: underline; }
+.language-switch a[aria-current="true"] { border-color: currentColor; }
+.arxiv-form { margin: -9px 0 26px; border: 1px solid var(--line); padding: 9px 11px; background: var(--panel); }
+.arxiv-form label { display: block; margin-bottom: 5px; font-size: .9rem; font-weight: bold; }
+.arxiv-controls { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+.arxiv-controls .search { flex: 1 1 185px; }
+.arxiv-controls .button { min-height: 37px; }
+@media (max-width: 420px) {
+  .masthead .brand { font-size: 1.16rem; gap: 4px; }
+  .brand-mark { width: 23px; height: 23px; }
+  .header-actions { gap: 4px; }
+  .language-switch a { padding-inline: 3px; }
+  .masthead-button { padding-inline: 6px; }
+}

@@ -38,7 +38,7 @@ async function api(path, options) {
   const response = await fetch(path, options);
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const failure = new Error(body.error || "Запрос не удался. Попробуй ещё раз.");
+    const failure = new Error(body.error || tr("Запрос не удался. Попробуй ещё раз."));
     failure.status = response.status;
     throw failure;
   }
@@ -63,7 +63,7 @@ function showPage(number, fromChat = false) {
     image.hidden = false;
     image.classList.remove("page-enter");
     byId("page-error").hidden = true;
-    image.alt = `Страница ${page} из PDF`;
+    image.alt = tr("Страница {page} из PDF", {page});
     image.src = `${pdfBase}/page/${page}.png`;
     byId("document-scroll").scrollTop = 0;
   }
@@ -80,9 +80,9 @@ function showPage(number, fromChat = false) {
 function renderThreadList() {
   const items = threads.map((thread) => {
     const row = node("li");
-    const link = node("a", thread.title, "thread-link");
+    const link = node("a", tr(thread.title), "thread-link");
     link.href = "?chat=" + thread.id;
-    link.title = thread.title;
+    link.title = tr(thread.title);
     if (thread.id === active?.id) link.setAttribute("aria-current", "true");
     link.addEventListener("click", (event) => {
       if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
@@ -94,29 +94,29 @@ function renderThreadList() {
     return row;
   });
   byId("thread-list").replaceChildren(...items);
-  message("threads-status", threads.length ? "" : "Здесь появятся чаты по этой статье.");
+  message("threads-status", threads.length ? "" : tr("Здесь появятся чаты по этой статье."));
 }
 
 function bubble(role, text) {
   const element = node("div", "", "bubble " + role);
-  element.append(node("p", role === "user" ? "Ты" : "ScienceHelpy", "speaker"),
+  element.append(node("p", role === "user" ? tr("Ты") : "ScienceHelpy", "speaker"),
                  node("p", text));
   return element;
 }
 
 function replyBubble(turn) {
-  const reply = bubble("reply", turn.answer);
-  if (turn.warning) reply.append(node("p", turn.warning, "notice"));
+  const reply = bubble("reply", tr(turn.answer));
+  if (turn.warning) reply.append(node("p", tr(turn.warning), "notice"));
   if (!turn.sources.length) return reply;
   const sources = node("ol", "", "source-list");
   for (const source of turn.sources) {
     if (!Number.isInteger(source.page)) continue;
     const item = node("li");
     const detail = node("details");
-    const open = node("button", "Показать в PDF", "source-page");
+    const open = node("button", tr("Показать в PDF"), "source-page");
     open.type = "button";
     open.addEventListener("click", () => showPage(source.page, true));
-    detail.append(node("summary", `Страница ${source.page}`), node("p", source.text), open);
+    detail.append(node("summary", tr("Страница {page}", {page: source.page})), node("p", source.text), open);
     item.append(detail);
     sources.append(item);
   }
@@ -149,9 +149,9 @@ function renderConversation(animateReply = false) {
   const progressChanged = nextProgress !== shownProgress || replaceHistory;
   if (progressChanged) {
     progress.replaceChildren();
-    if (loading) progress.append(bubble("reply", "Загружаем историю…"));
+    if (loading) progress.append(bubble("reply", tr("Загружаем историю…")));
     if (current) {
-      const waiting = bubble("reply", "Готовлю ответ…");
+      const waiting = bubble("reply", tr("Готовлю ответ…"));
       waiting.classList.add("waiting", "chat-arrival");
       progress.append(bubble("user", current), waiting);
     }

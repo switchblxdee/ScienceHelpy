@@ -20,7 +20,7 @@
     const dark = root.dataset.theme === "dark";
     for (const button of document.querySelectorAll("[data-theme-toggle]")) {
       button.setAttribute("aria-pressed", String(dark));
-      button.title = dark ? "Включить светлую тему" : "Включить тёмную тему";
+      button.title = dark ? tr("Включить светлую тему") : tr("Включить тёмную тему");
     }
   }
 

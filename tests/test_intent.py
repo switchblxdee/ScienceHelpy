@@ -53,3 +53,11 @@ class IntentTests(unittest.TestCase):
             self.assertEqual(self.research.ask("Придумай название для клуба", "thread", "selected.pdf")["sources"], [])
         self.library.search.assert_not_called()
         self.library.overview.assert_not_called()
+
+
+    def test_explicit_english_paper_question_only_calls_model_for_the_answer(self):
+        self.library.search.return_value = [{"title": "Example", "text": "A result.", "page": 2}]
+        with patch.object(self.research, "_chat", return_value="The paper reports a result [1].") as model:
+            result = self.research.ask("What are the results in this paper?", "thread", "selected.pdf")
+        self.assertEqual(result["mode"], "generated")
+        model.assert_called_once()

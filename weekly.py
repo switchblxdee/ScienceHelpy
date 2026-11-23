@@ -5,16 +5,15 @@ from datetime import date, datetime, timedelta, timezone
 import json
 import logging
 from pathlib import Path
-import re
 from time import sleep
 
 import requests
 
+from arxiv_import import ARXIV_ID, save_arxiv_paper
 from config import Settings
-from library import Library, MAX_PDF_BYTES, atomic_write
+from library import Library, atomic_write
 
 FEED_URL = "https://huggingface.co/api/daily_papers"
-ARXIV_ID = re.compile(r"\d{4}\.\d{4,5}(?:v\d+)?")
 logger = logging.getLogger(__name__)
 
 
@@ -116,29 +115,7 @@ def popularity(item):
 
 
 def save_weekly_paper(library: Library, paper: dict):
-    identifier = paper["id"]
-    if not ARXIV_ID.fullmatch(identifier):
-        raise ValueError("Invalid arXiv identifier")
-    name = f"arxiv-{identifier.replace('.', '_')}.pdf"
-    existing = library.get(name)
-    if existing:
-        return existing.paper, False
-
-    data = bytearray()
-    try:
-        with requests.get(f"https://arxiv.org/pdf/{identifier}", stream=True,
-                          timeout=(5, 15), allow_redirects=False) as response:
-            if response.status_code != 200:
-                raise requests.HTTPError(f"arXiv HTTP {response.status_code}")
-            for chunk in response.iter_content(chunk_size=65536):
-                data.extend(chunk)
-                if len(data) > MAX_PDF_BYTES:
-                    raise ValueError("PDF превысил допустимые 25 МБ.")
-    except (requests.RequestException, ValueError) as error:
-        library.events.publish("paperImportRequested", paper_file=name)
-        library.events.publish("paperImportFailed", paper_file=name, reason=type(error).__name__)
-        raise
-    return library.add(bytes(data), name, (paper["title"], paper["authors"], identifier))
+    return save_arxiv_paper(library, paper["id"], paper["title"], paper["authors"])
 
 
 def main():

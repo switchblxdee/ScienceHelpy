@@ -13,9 +13,11 @@ from flask import Flask, Response, g, jsonify, redirect, render_template, reques
 from werkzeug.exceptions import NotFound, RequestEntityTooLarge
 
 from application import create_services
+from arxiv_import import ArxivNotFound, InvalidReference, arxiv_id, save_arxiv_paper
 from chats import ChatConflict, ChatStore
 from config import Settings
-from library import InvalidPDF, MAX_PDF_BYTES
+from library import InvalidPDF, MAX_PDF_BYTES, render_pdf_page
+from localization import ENGLISH, language, t
 from weekly import WeeklyFeed, save_weekly_paper
 
 
@@ -50,7 +52,24 @@ def create_app(settings: Settings | None = None):
         if request.method == "POST":
             origin = request.headers.get("Origin")
             if origin and origin not in {request.host_url.rstrip("/"), settings.public_url or None}:
-                return jsonify(error="Запрос с другого сайта отклонён."), 403
+                return jsonify(error=t("Запрос с другого сайта отклонён.")), 403
+
+    @app.context_processor
+    def locale():
+        lang = language()
+        return {"lang": lang, "t": t, "ui_strings": ENGLISH if lang == "en" else {}}
+
+    @app.get("/language/<code>")
+    def set_language(code):
+        if code not in {"ru", "en"}:
+            raise NotFound
+        target = request.args.get("next", "/")
+        if not target.startswith("/") or target.startswith("//") or chr(92) in target or any(ord(c) < 32 for c in target):
+            target = "/"
+        response = redirect(target)
+        response.set_cookie("sciencehelpy_language", code, max_age=365 * 24 * 60 * 60,
+                            samesite="Lax", secure=request.is_secure, httponly=True)
+        return response
 
     def chat_owner():
         if "chat_owner" not in g:
@@ -75,7 +94,7 @@ def create_app(settings: Settings | None = None):
 
     @app.errorhandler(RequestEntityTooLarge)
     def upload_too_large(_):
-        return jsonify(error="Размер PDF не должен превышать 25 МБ."), 413
+        return jsonify(error=t("Размер PDF не должен превышать 25 МБ.")), 413
 
     @app.get("/")
     def index():
@@ -84,17 +103,36 @@ def create_app(settings: Settings | None = None):
 
     @app.get("/api/papers")
     def papers():
-        return jsonify([asdict(entry.paper) for entry in library.entries()])
+        return jsonify([asdict(paper) for paper in library.catalog()])
 
     @app.post("/api/papers")
     def upload():
         file = request.files.get("pdf")
         if not file:
-            return jsonify(error="Выберите PDF для загрузки."), 400
+            return jsonify(error=t("Выберите PDF для загрузки.")), 400
         try:
             paper, created = library.add(file.stream.read(MAX_PDF_BYTES + 1))
         except InvalidPDF as error:
-            return jsonify(error=str(error)), 400
+            return jsonify(error=t(str(error))), 400
+        return jsonify(paper=asdict(paper), created=created), 201 if created else 200
+
+    @app.post("/api/arxiv/import")
+    def import_arxiv():
+        body = request.get_json(silent=True)
+        reference = body.get("reference") if isinstance(body, dict) else None
+        try:
+            identifier = arxiv_id(reference if isinstance(reference, str) else "")
+        except InvalidReference:
+            return jsonify(error=t("Введите arXiv ID или ссылку на arXiv.")), 400
+        try:
+            paper, created = save_arxiv_paper(library, identifier)
+        except ArxivNotFound:
+            return jsonify(error=t("Статья с таким arXiv ID не найдена.")), 404
+        except InvalidPDF as error:
+            return jsonify(error=t(str(error))), 422
+        except requests.RequestException:
+            app.logger.warning("Could not download arXiv paper %s", identifier)
+            return jsonify(error=t("Не удалось получить PDF с arXiv. Попробуйте ещё раз.")), 502
         return jsonify(paper=asdict(paper), created=created), 201 if created else 200
 
     @app.get("/api/weekly")
@@ -113,44 +151,50 @@ def create_app(settings: Settings | None = None):
         try:
             saved, created = import_weekly(identifier)
         except NotFound as error:
-            return jsonify(error=error.description), 404
+            return jsonify(error=t(error.description)), 404
         except (requests.RequestException, ValueError):
             app.logger.warning("Could not import arXiv paper %s", identifier, exc_info=True)
-            return jsonify(error="Не удалось получить PDF с arXiv. Попробуйте ещё раз."), 502
+            return jsonify(error=t("Не удалось получить PDF с arXiv. Попробуйте ещё раз.")), 502
         return jsonify(paper=asdict(saved), created=created), 201 if created else 200
 
     @app.get("/assistant")
     def assistant():
         chat_owner()
-        return render_template("assistant_start.html", papers=[entry.paper for entry in library.entries()])
+        return render_template("assistant_start.html", papers=library.catalog())
 
     @app.post("/assistant/from-weekly/<identifier>")
     def assistant_weekly(identifier):
         try:
             paper, _ = import_weekly(identifier)
         except NotFound as error:
-            return render_template("assistant_start.html", papers=[], error=error.description), 404
+            return render_template("assistant_start.html", papers=[], error=t(error.description)), 404
         except (requests.RequestException, ValueError):
             return render_template("assistant_start.html", papers=[],
-                                   error="Не удалось скачать PDF с arXiv. Попробуйте снова из каталога."), 502
+                                   error=t("Не удалось скачать PDF с arXiv. Попробуйте снова из каталога.")), 502
         return redirect(url_for("assistant_paper", name=paper.file), code=303)
 
     @app.get("/assistant/<name>")
     def assistant_paper(name):
-        entry = library.get(name)
-        if entry is None:
+        paper = library.inspect(name)
+        if paper is None:
             return render_template("assistant_start.html", papers=[],
-                                   error="Эта статья больше не доступна."), 404
+                                   error=t("Эта статья больше не доступна.")), 404
         chat_owner()
-        return render_template("assistant.html", paper=entry.paper, ai_enabled=settings.ai_enabled)
+        return render_template("assistant.html", paper=paper, ai_enabled=settings.ai_enabled)
 
     @app.get("/papers/<name>/page/<int:number>.png")
     def pdf_page(name, number):
-        result = library.page_image(name, number)
+        result = library.page_preview(name, number)
         if result is None:
             raise NotFound
-        data, etag = result
-        response = Response(data, mimetype="image/png")
+        path, etag = result
+        if request.if_none_match.contains_weak(etag):
+            response = Response(status=304)
+        else:
+            data = render_pdf_page(path, number, etag)
+            if data is None:
+                raise NotFound
+            response = Response(data, mimetype="image/png")
         response.set_etag(etag)
         response.cache_control.private = True
         response.cache_control.no_cache = True
@@ -159,13 +203,13 @@ def create_app(settings: Settings | None = None):
     @app.get("/api/chats/<name>")
     def list_chats(name):
         if not library.pdf_path(name):
-            return jsonify(error="Статья больше не доступна."), 404
+            return jsonify(error=t("Статья больше не доступна.")), 404
         return jsonify(chats.list(chat_owner(), name))
 
     @app.post("/api/chats/<name>")
     def new_chat(name):
         if not library.pdf_path(name):
-            return jsonify(error="Статья больше не доступна."), 404
+            return jsonify(error=t("Статья больше не доступна.")), 404
         thread = chats.create(chat_owner(), name)
         events.publish("conversationStarted", conversation_id=thread["id"])
         return jsonify(thread), 201
@@ -174,31 +218,31 @@ def create_app(settings: Settings | None = None):
     def read_chat(name, thread_id):
         thread = chats.get(chat_owner(), name, thread_id)
         if thread is None:
-            return jsonify(error="Чат не найден."), 404
+            return jsonify(error=t("Чат не найден.")), 404
         return jsonify(thread)
 
     @app.post("/api/chats/<name>/<thread_id>")
     def chat_turn(name, thread_id):
         if not library.pdf_path(name):
-            return jsonify(error="Статья больше не доступна."), 404
+            return jsonify(error=t("Статья больше не доступна.")), 404
         try:
             body, question = read_question()
         except ValueError as error:
-            return jsonify(error=str(error)), 400
+            return jsonify(error=t(str(error))), 400
         owner = chat_owner()
         thread = chats.get(owner, name, thread_id, recent=3)
         if thread is None:
-            return jsonify(error="Чат не найден."), 404
+            return jsonify(error=t("Чат не найден.")), 404
         revision = body.get("revision")
         if type(revision) is not int or thread["revision"] != revision:
-            return jsonify(error="В чате есть новое сообщение. Обновили историю, отправь вопрос снова."), 409
+            return jsonify(error=t("В чате есть новое сообщение. Обновили историю, отправь вопрос снова.")), 409
         history = tuple((turn["question"], turn["answer"][:2500]) for turn in thread["turns"])
         result = research.ask(question, thread_id, name, history)
         reply = {key: result[key] for key in ("answer", "sources", "mode", "warning")}
         try:
             saved = chats.append(owner, name, thread_id, revision, question, reply)
         except ChatConflict:
-            return jsonify(error="В чате есть новое сообщение. Обновили историю, отправь вопрос снова."), 409
+            return jsonify(error=t("В чате есть новое сообщение. Обновили историю, отправь вопрос снова.")), 409
         events.publish("answerProvided", conversation_id=thread_id,
                        question_id=result["question_id"], mode=result["mode"])
         return jsonify(saved), 201
@@ -214,10 +258,10 @@ def create_app(settings: Settings | None = None):
         try:
             body, question = read_question()
         except ValueError as error:
-            return jsonify(error=str(error)), 400
+            return jsonify(error=t(str(error))), 400
         file = body.get("file")
         if file is not None and (not isinstance(file, str) or not library.pdf_path(file)):
-            return jsonify(error="Статья больше не доступна."), 404
+            return jsonify(error=t("Статья больше не доступна.")), 404
         turns = body.get("history", [])
         if not isinstance(turns, list) or len(turns) > 3 or any(
             not isinstance(turn, dict)
@@ -227,7 +271,7 @@ def create_app(settings: Settings | None = None):
             or not 1 <= len(turn["answer"]) <= 2500
             for turn in turns
         ):
-            return jsonify(error="Некорректная история диалога."), 400
+            return jsonify(error=t("Некорректная история диалога.")), 400
         history = tuple((turn["question"], turn["answer"]) for turn in turns)
         conversation = str(uuid4())
         events.publish("conversationStarted", conversation_id=conversation)

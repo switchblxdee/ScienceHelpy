@@ -1,0 +1,6 @@
+<nav class="language-switch" aria-label="{{ t('Язык интерфейса') }}">
+  {% for code, label in [('ru', 'Русский'), ('en', 'English')] %}
+    <a href="{{ url_for('set_language', code=code, next=request.full_path) }}" lang="{{ code }}"
+       aria-label="{{ label }}"{% if lang == code %} aria-current="true"{% endif %}>{{ code|upper }}</a>
+  {% endfor %}
+</nav>
