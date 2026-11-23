@@ -2,12 +2,7 @@
 
 const byId = (id) => document.getElementById(id);
 const filter = byId("catalog-filter");
-const dialog = byId("chat");
-const picker = byId("chat-paper");
-const question = byId("question");
 const pdfPicker = byId("pdf");
-const stream = byId("chat-stream");
-const conversations = new Map();
 const pendingImports = new Map();
 let papers = [];
 let weekly = {papers: []};
@@ -17,8 +12,6 @@ let lastFeedCheck = 0;
 let catalogReady = false;
 let feedReady = false;
 let expanded = false;
-let activeFile = "";
-let selection = 0;
 
 function node(tag, text, className) {
   const element = document.createElement(tag);
@@ -77,6 +70,22 @@ function savedWeekly(paper) {
   return papers.find((saved) => saved.arxiv_id === paper.id);
 }
 
+function discussionLink(file) {
+  return link("Обсудить с ИИ", "/assistant/" + encodeURIComponent(file), "button outline");
+}
+
+function weeklyDiscussion(paper) {
+  const form = node("form");
+  form.action = "/assistant/from-weekly/" + encodeURIComponent(paper.id);
+  form.method = "post";
+  form.target = "_blank";
+  form.rel = "noopener";
+  const submit = node("button", "Обсудить с ИИ", "button outline");
+  submit.type = "submit";
+  form.append(submit);
+  return form;
+}
+
 function articleTitle(paper, href) {
   const heading = node("h3");
   heading.append(link(paper.title, href));
@@ -106,7 +115,7 @@ function weeklyCard(paper) {
   }, saved ? "button outline saved" : "button outline");
   save.disabled = Boolean(saved);
   const actions = node("div", "", "card-actions");
-  actions.append(save, button("Обсудить", () => openChat(saved ? "local:" + saved.file : "weekly:" + paper.id)));
+  actions.append(save, saved ? discussionLink(saved.file) : weeklyDiscussion(paper));
   card.append(meta, articleTitle(paper, arxivUrl(paper.id)));
   if (paper.authors) card.append(node("p", paper.authors, "authors"));
   if (paper.summary) card.append(node("p", paper.summary, "abstract"));
@@ -122,7 +131,7 @@ function libraryRow(paper) {
   if (paper.authors) description.append(node("p", paper.authors, "authors"));
   const actions = node("div", "", "card-actions");
   actions.append(link("Открыть PDF", pdfUrl(paper.file), "button outline"),
-                 button("Обсудить", () => openChat("local:" + paper.file)));
+                 discussionLink(paper.file));
   row.append(description, actions);
   return row;
 }
@@ -146,20 +155,6 @@ function renderCatalog() {
   byId("show-all").textContent = expanded ? "Свернуть подборку" : `Вся подборка (${trending.length})`;
 }
 
-function refreshPicker(value = picker.value) {
-  const local = node("optgroup");
-  local.label = "В библиотеке";
-  local.append(...papers.map((paper) => new Option(paper.title, "local:" + paper.file)));
-  const trending = node("optgroup");
-  trending.label = "Подборка недели";
-  trending.append(...weekly.papers.filter((paper) => !savedWeekly(paper))
-    .map((paper) => new Option(paper.title, "weekly:" + paper.id)));
-  picker.replaceChildren(new Option("Выбери статью", ""));
-  if (local.children.length) picker.append(local);
-  if (trending.children.length) picker.append(trending);
-  if ([...picker.options].some((option) => option.value === value)) picker.value = value;
-}
-
 async function loadLibrary() {
   try {
     papers = await api("/api/papers");
@@ -169,7 +164,6 @@ async function loadLibrary() {
   } finally {
     catalogReady = true;
     renderCatalog();
-    refreshPicker();
   }
 }
 
@@ -183,14 +177,12 @@ async function loadWeekly() {
   } finally {
     feedReady = true;
     renderCatalog();
-    refreshPicker();
   }
 }
 
 function rememberPaper(paper) {
   papers = [...papers.filter((item) => item.file !== paper.file), paper];
   renderCatalog();
-  refreshPicker();
 }
 
 async function importWeekly(paper) {
@@ -208,127 +200,11 @@ async function importWeekly(paper) {
   return pendingImports.get(paper.id);
 }
 
-function conversation(file) {
-  if (!conversations.has(file)) conversations.set(file, []);
-  return conversations.get(file);
-}
-
-function bubble(role, text, data) {
-  const item = node("div", "", "bubble " + role);
-  item.append(node("p", text));
-  if (data?.warning) item.append(node("p", data.warning, "notice"));
-  if (data?.sources.length) {
-    const sources = node("ol", "", "source-list");
-    for (const source of data.sources) {
-      const row = node("li");
-      const details = node("details");
-      const label = source.page ? `Страница ${source.page} · ${source.title}` : source.title;
-      details.append(node("summary", label), node("p", source.text));
-      if (source.file) details.append(link("Открыть страницу PDF", pdfUrl(source.file, source.page)));
-      row.append(details);
-      sources.append(row);
-    }
-    item.append(sources);
-  }
-  return item;
-}
-
-function renderConversation() {
-  const turns = activeFile ? conversation(activeFile) : [];
-  byId("chat-empty").hidden = turns.length > 0;
-  byId("chat-intro").textContent = activeFile
-    ? "Спроси о методе, результатах или о том, где авторы обсуждают нужную тему."
-    : "Выбери статью, чтобы начать диалог.";
-  byId("chat-suggestions").hidden = !activeFile;
-  const messages = byId("chat-messages");
-  messages.replaceChildren(...turns.flatMap((turn) => [
-    bubble("user", turn.question),
-    bubble("assistant", turn.data?.answer || turn.error || "Ищу ответ в статье…", turn.data),
-  ]));
-  question.disabled = !activeFile || Boolean(turns.at(-1)?.pending);
-  byId("send").disabled = question.disabled;
-  stream.scrollTop = stream.scrollHeight;
-}
-
-async function selectPaper(value) {
-  const request = ++selection;
-  activeFile = "";
-  status("chat-status", "");
-  renderConversation();
-  question.value = "";
-  if (value.startsWith("local:")) {
-    activeFile = value.slice(6);
-  } else if (value.startsWith("weekly:")) {
-    const paper = weekly.papers.find((item) => item.id === value.slice(7));
-    if (!paper) return;
-    status("chat-status", "Загружаю PDF с arXiv…");
-    try {
-      const saved = await importWeekly(paper);
-      if (request !== selection) return;
-      refreshPicker("local:" + saved.file);
-      activeFile = saved.file;
-      status("chat-status", "");
-    } catch (error) {
-      if (request !== selection) return;
-      picker.value = "";
-      status("chat-status", error.message);
-    }
-  }
-  renderConversation();
-  if (activeFile && dialog.open) question.focus();
-}
-
-function openChat(value) {
-  if (!dialog.open) dialog.showModal();
-  if (value) {
-    refreshPicker(value);
-    selectPaper(value);
-  } else {
-    renderConversation();
-    picker.focus();
-  }
-}
-
-async function ask(text) {
-  if (!activeFile || text.length < 3 || question.disabled) return;
-  const file = activeFile;
-  const turns = conversation(file);
-  const history = turns.filter((turn) => turn.data).slice(-3)
-    .map((turn) => ({question: turn.question, answer: turn.data.answer.slice(0, 2500)}));
-  const turn = {question: text, pending: true};
-  if (turns.length >= 40) turns.shift();
-  turns.push(turn);
-  question.value = "";
-  renderConversation();
-  try {
-    turn.data = await api("/api/ask", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({question: text, file, history}),
-    });
-  } catch (error) {
-    turn.error = error.message;
-  } finally {
-    turn.pending = false;
-    if (file === activeFile) {
-      renderConversation();
-      if (dialog.open) question.focus();
-    }
-  }
-}
-
 filter.addEventListener("input", renderCatalog);
 byId("show-all").addEventListener("click", () => {
   expanded = !expanded;
   renderCatalog();
 });
-picker.addEventListener("change", () => selectPaper(picker.value));
-for (const item of document.querySelectorAll("[data-open-chat]")) {
-  item.addEventListener("click", () => openChat());
-}
-for (const item of document.querySelectorAll("[data-question]")) {
-  item.addEventListener("click", () => ask(item.dataset.question));
-}
 for (const item of document.querySelectorAll("[data-upload]")) {
   item.addEventListener("click", () => pdfPicker.click());
 }
@@ -347,17 +223,6 @@ pdfPicker.addEventListener("change", async () => {
     status("upload-status", error.message);
   }
 });
-byId("chat-form").addEventListener("submit", (event) => {
-  event.preventDefault();
-  ask(question.value.trim());
-});
-question.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
-    event.preventDefault();
-    byId("chat-form").requestSubmit();
-  }
-});
-
 loadLibrary();
 loadWeekly();
 

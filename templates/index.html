@@ -16,7 +16,7 @@
       <nav aria-label="Разделы">
         <a href="#weekly">Подборка</a><a href="#library">Библиотека</a>
       </nav>
-      <button class="button blue" type="button" data-open-chat><span aria-hidden="true">✦</span> Помощник</button>
+      <a class="button blue" href="{{ url_for('assistant') }}" target="_blank" rel="noopener"><span aria-hidden="true">✦</span> Помощник</a>
     </div>
   </header>
 
@@ -66,40 +66,5 @@
 
   <footer class="footer"><div class="shell"><span>ScienceHelpy</span><a href="https://github.com/switchblxdee/ScienceHelpy" target="_blank" rel="noopener noreferrer">Исходный код</a></div></footer>
 
-  <dialog id="chat" class="chat" aria-labelledby="chat-title">
-    <div class="chat-head">
-      <div class="chat-heading"><span class="assistant-mark" aria-hidden="true">✦</span><h2 id="chat-title">Помощник по статьям</h2></div>
-      <form method="dialog"><button class="icon-button" aria-label="Закрыть помощника" type="submit">×</button></form>
-    </div>
-    <div class="chat-picker">
-      <label for="chat-paper">Статья для обсуждения</label>
-      <select id="chat-paper"><option value="">Выбери статью</option></select>
-      <p id="chat-status" class="notice" role="status" hidden></p>
-    </div>
-    <div id="chat-stream" class="chat-stream" role="log" aria-live="polite" aria-relevant="additions text">
-      <div id="chat-empty" class="chat-empty">
-        <p id="chat-intro">Выбери статью, чтобы начать диалог.</p>
-        <div id="chat-suggestions" class="prompts" hidden>
-          {% if ai_enabled %}
-          <button class="prompt" type="button" data-question="О чём эта статья?">О чём статья?</button>
-          <button class="prompt" type="button" data-question="В чём основная идея метода?">Основная идея</button>
-          <button class="prompt" type="button" data-question="Какие результаты получили авторы?">Результаты</button>
-          {% else %}
-          <button class="prompt" type="button" data-question="abstract">Найти аннотацию</button>
-          <button class="prompt" type="button" data-question="method">Найти описание метода</button>
-          <button class="prompt" type="button" data-question="results">Найти результаты</button>
-          {% endif %}
-        </div>
-      </div>
-      <div id="chat-messages"></div>
-    </div>
-    <form id="chat-form" class="chat-form">
-      <div class="composer">
-        <textarea id="question" maxlength="1500" minlength="3" rows="2" required disabled aria-label="Вопрос по статье" placeholder="Задай вопрос по статье…"></textarea>
-        <button id="send" type="submit" class="button blue" disabled>Отправить</button>
-      </div>
-      <p class="chat-mode">{{ 'ИИ отвечает по выбранному PDF. Сверяй ответ с источниками.' if ai_enabled else 'Локальный поиск по PDF. Для ответов ИИ подключи Ollama или Groq.' }}</p>
-    </form>
-  </dialog>
 </body>
 </html>

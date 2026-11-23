@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ paper.title }} · ScienceHelpy</title>
+  <link rel="icon" href="{{ url_for('static', filename='mark.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='assistant.css') }}">
+  <script defer src="{{ url_for('static', filename='assistant.js') }}"></script>
+</head>
+<body class="assistant-page">
+  <header class="workspace-header">
+    <a href="{{ url_for('index') }}" class="brand"><span class="brand-mark" aria-hidden="true">S</span>ScienceHelpy</a>
+    <a href="{{ url_for('assistant') }}" class="button outline">Сменить статью</a>
+  </header>
+  <nav class="workspace-tabs" aria-label="Области помощника">
+    <button type="button" data-panel="threads" aria-pressed="false">Чаты</button>
+    <button type="button" data-panel="conversation" aria-pressed="true">Обсуждение</button>
+    <button type="button" data-panel="document" aria-pressed="false">PDF</button>
+  </nav>
+  <main id="workspace" data-paper="{{ paper.file }}" data-pages="{{ paper.page_count }}" data-active-panel="conversation">
+    <aside class="thread-panel" aria-labelledby="thread-title">
+      <div class="thread-header">
+        <h2 id="thread-title">Чаты по статье</h2>
+        <button class="button blue" type="button" id="new-chat">＋ Новый чат</button>
+      </div>
+      <p id="threads-status" class="notice" role="status">Загружаем чаты…</p>
+      <nav aria-label="Сохранённые чаты"><ul id="thread-list"></ul></nav>
+    </aside>
+    <section class="conversation-panel" aria-labelledby="paper-title">
+      <header class="conversation-header">
+        {% if paper.arxiv_id %}<span class="badge">arXiv:{{ paper.arxiv_id }}</span>{% endif %}
+        <h1 id="paper-title">{{ paper.title }}</h1>
+        {% if paper.authors %}<p>{{ paper.authors }}</p>{% endif %}
+      </header>
+      <div class="chat-scroll" id="chat-scroll">
+        <div id="welcome" class="welcome">
+          <div aria-hidden="true" class="assistant-mark">✦</div>
+          <h2>Обсудим статью?</h2>
+          <p>Спроси про метод, результаты или где в статье обсуждается нужная тема.</p>
+          <div class="suggestions" aria-label="Примеры вопросов">
+            {% if ai_enabled %}
+            <button type="button" data-question="О чём эта статья?">О чём статья?</button>
+            <button type="button" data-question="В чём основная идея метода?">Основная идея</button>
+            <button type="button" data-question="Какие результаты получили авторы?">Результаты</button>
+            {% else %}
+            <button type="button" data-question="abstract">Найти аннотацию</button>
+            <button type="button" data-question="method">Найти описание метода</button>
+            <button type="button" data-question="results">Найти результаты</button>
+            {% endif %}
+          </div>
+        </div>
+        <div id="messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
+      </div>
+      <form id="ask-form" class="composer">
+        <p id="chat-error" class="notice" role="status" hidden></p>
+        <div class="composer-row">
+          <textarea id="question" maxlength="1500" minlength="3" rows="2" required aria-label="Вопрос по статье" placeholder="Задай вопрос по статье…"></textarea>
+          <button id="send" type="submit" class="button blue">Отправить</button>
+        </div>
+        <p class="model-info">{{ 'Ответы ИИ по выбранной статье. Проверяй выводы по PDF.' if ai_enabled else 'Поиск по PDF · генерация ответов требует Ollama или Groq.' }}</p>
+      </form>
+    </section>
+    <section class="document-panel" aria-labelledby="document-title">
+      <header class="document-header">
+        <h2 id="document-title">PDF статьи</h2>
+        <a href="{{ url_for('pdf', name=paper.file) }}" target="_blank" rel="noopener" id="open-pdf">Открыть оригинал</a>
+      </header>
+      <form id="page-form" class="page-controls" aria-label="Навигация по PDF">
+        <button type="button" class="button outline" id="previous-page" aria-label="Предыдущая страница" disabled>‹</button>
+        <label for="page-number">Страница</label>
+        <input type="number" inputmode="numeric" id="page-number" min="1" max="{{ paper.page_count }}" value="1">
+        <span>из {{ paper.page_count }}</span>
+        <button type="button" class="button outline" id="next-page" aria-label="Следующая страница" {% if paper.page_count == 1 %}disabled{% endif %}>›</button>
+      </form>
+      <div class="document-scroll" id="document-scroll">
+        <p id="page-error" class="notice" role="status" hidden>Не удалось показать страницу. PDF доступен по ссылке «Открыть оригинал».</p>
+        <img id="pdf-page" alt="Страница 1 из PDF" width="700" height="990" src="{{ url_for('pdf_page', name=paper.file, number=1) }}">
+      </div>
+    </section>
+  </main>
+</body>
+</html>

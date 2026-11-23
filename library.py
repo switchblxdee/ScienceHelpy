@@ -198,6 +198,21 @@ class Library:
             for _, paper, page in ranked[:limit]
         ]
 
+    def page_image(self, name: str, number: int) -> tuple[bytes, str] | None:
+        path = self.pdf_path(name)
+        if path is None or number < 1:
+            return None
+        try:
+            with PDF_LOCK, pymupdf.open(path) as doc:
+                if doc.needs_pass or number > min(len(doc), MAX_PAGES):
+                    return None
+                page = doc[number - 1]
+                scale = min(2, 1400 / max(page.rect.width, page.rect.height, 1))
+                image = page.get_pixmap(matrix=pymupdf.Matrix(scale, scale), alpha=False)
+                return image.tobytes("png"), f"{path.stat().st_mtime_ns:x}-{number}"
+        except (OSError, RuntimeError, pymupdf.FileDataError):
+            return None
+
     def overview(self, file: str) -> list[dict]:
         entry = self.get(file)
         if not entry:

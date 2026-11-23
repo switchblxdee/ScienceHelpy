@@ -2,7 +2,6 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:1rem/1.55 var(--sans)}
-body:has(dialog[open]){overflow:hidden}
 button,input,textarea,select{font:inherit}
 a{color:var(--deep);text-underline-offset:3px}
 button{cursor:pointer}
@@ -72,35 +71,6 @@ h1 span{color:var(--mint)}
 .library-row .card-meta{margin:0}
 .footer{border-top:1px solid var(--line);font-size:.9rem;color:var(--muted);padding-block:23px}
 .footer .shell{display:flex;justify-content:space-between;gap:10px}
-.chat{width:min(760px,calc(100% - 24px));max-width:none;margin:auto;padding:0;border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 64px #08102d65;color:var(--ink);background:var(--surface);overflow:hidden}
-.chat[open]{display:grid;grid-template-rows:auto auto minmax(140px,1fr) auto;height:min(720px,calc(100dvh - 24px));max-height:none}
-.chat::backdrop{background:#0b123789;backdrop-filter:blur(3px)}
-.chat-head,.chat-heading{display:flex;align-items:center;gap:10px}
-.chat-head{justify-content:space-between;padding:15px 19px;border-bottom:1px solid var(--line)}
-.chat-head h2{font-size:1.16rem;margin:0;letter-spacing:-.025em}
-.assistant-mark{display:grid;place-items:center;width:33px;height:33px;border-radius:10px;background:#edf0ff;color:var(--deep)}
-.icon-button{border:0;border-radius:8px;background:#eff2fa;color:var(--ink);font-size:1.55rem;line-height:1;width:36px;height:36px}
-.chat-picker{padding:12px 19px;border-bottom:1px solid var(--line)}
-.chat-picker label{display:block;font-size:.85rem;font-weight:660;margin-bottom:5px}
-.chat-picker select{width:100%;min-height:42px;padding:7px 35px 7px 10px;border:1px solid var(--line);border-radius:8px;color:var(--ink);appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'%3E%3Cpath d='m2 3 5 5 5-5' fill='none' stroke='%23536079' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 12px center}
-.chat-stream{overflow:auto;padding:19px;background:#f5f7ff}
-.chat-empty{text-align:center;color:var(--muted);margin:32px auto;max-width:37ch}
-.chat-empty p{margin-bottom:12px}
-.prompts{display:flex;justify-content:center;gap:5px;flex-wrap:wrap}
-.prompt{background:#fff;color:var(--deep);border:1px solid var(--line);padding:6px 9px;border-radius:8px;font-size:.88rem}
-.prompt:hover{border-color:var(--blue)}
-.bubble{margin:0 0 12px;padding:10px 13px;border-radius:12px;max-width:92%;overflow-wrap:anywhere}
-.bubble p{white-space:pre-wrap;margin:0}
-.bubble.user{margin-left:auto;background:#e0e7ff;width:fit-content;color:#172466}
-.bubble.assistant{background:#fff;border:1px solid var(--line);margin-right:auto}
-.bubble .notice{margin-top:7px}
-.source-list{margin:9px 0 0;padding-left:1.3em;color:var(--muted);font-size:.88rem}
-.source-list summary{color:var(--deep);cursor:pointer}
-.source-list p{margin:4px 0}
-.chat-form{padding:13px 19px;border-top:1px solid var(--line)}
-.composer{display:flex;align-items:flex-end;gap:8px}
-.composer textarea{flex:1;width:0;min-height:52px;max-height:150px;resize:vertical;padding:8px 9px;border:1px solid var(--line);border-radius:8px;color:var(--ink)}
-.chat-mode{margin:6px 0 0;color:var(--muted);font-size:.8rem}
 @media(max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-art{inset-inline-start:43%}}
-@media(max-width:620px){.nav{min-height:63px}.nav nav{display:none}.hero{min-height:300px;padding:25px 19px}.hero-art{inset-inline-start:32%;opacity:.6;mask-image:linear-gradient(90deg,transparent,black 72%)}.orbit{right:-173px}.section-head{align-items:start;flex-wrap:wrap}.cards{grid-template-columns:1fr}.library-row{align-items:flex-start;flex-direction:column}.chat-head,.chat-picker,.chat-stream,.chat-form{padding-inline:12px}}
+@media(max-width:620px){.nav{min-height:63px}.nav nav{display:none}.hero{min-height:300px;padding:25px 19px}.hero-art{inset-inline-start:32%;opacity:.6;mask-image:linear-gradient(90deg,transparent,black 72%)}.orbit{right:-173px}.section-head{align-items:start;flex-wrap:wrap}.cards{grid-template-columns:1fr}.library-row{align-items:flex-start;flex-direction:column}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}

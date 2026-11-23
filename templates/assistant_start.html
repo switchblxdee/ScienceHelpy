@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Выбор статьи · ScienceHelpy</title>
+  <link rel="icon" href="{{ url_for('static', filename='mark.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='assistant.css') }}">
+</head>
+<body>
+  <header class="masthead"><div class="shell nav">
+    <a href="{{ url_for('index') }}" class="brand"><span class="brand-mark" aria-hidden="true">S</span>ScienceHelpy</a>
+    <a class="button outline" href="{{ url_for('index') }}">Библиотека</a>
+  </div></header>
+  <main class="shell picker-page">
+    <h1>Помощник по статьям</h1>
+    <p>Открой статью, чтобы начать новый чат или вернуться к прошлым обсуждениям.</p>
+    {% if error %}<p role="alert" class="notice">{{ error }}</p>{% endif %}
+    {% if not papers %}
+      <a class="button blue" href="{{ url_for('index') }}">Открыть каталог</a>
+    {% else %}
+      <ul class="library-list">
+        {% for paper in papers %}
+        <li class="library-row">
+          <div><h2>{{ paper.title }}</h2><p class="authors">{{ paper.authors or ('PDF · ' ~ paper.page_count ~ ' стр.') }}</p></div>
+          <a class="button outline" href="{{ url_for('assistant_paper', name=paper.file) }}">К обсуждению</a>
+        </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </main>
+</body>
+</html>
