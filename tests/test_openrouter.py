@@ -33,7 +33,7 @@ class OpenRouterTest(unittest.TestCase):
             (settings.pdf_dir / "sample.pdf").write_bytes(article("Selected article", "Attention aligns words."))
             route = "/api/chats/sample.pdf"
             chat = client.post(route).json
-            with patch("research.post_json", return_value={"choices": [{"message": {"content": "Alignment [1]."}}]}) as provider:
+            with patch("research.Research._route", return_value=(True, "")), patch("research.post_json", return_value={"choices": [{"message": {"content": "Alignment [1]."}}]}) as provider:
                 saved = client.post(f"{route}/{chat['id']}",
                                     json={"question": "What does attention do?", "revision": 0})
             self.assertEqual(saved.status_code, 201)

@@ -36,7 +36,7 @@ class ChatsTest(unittest.TestCase):
         self.assertEqual(another_browser.get(self.first + "/" + first["id"]).status_code, 404)
 
         path = self.first + "/" + first["id"]
-        with patch("research.post_json", return_value={"message": {"content": "Token alignment [1]."}}):
+        with patch("research.Research._route", return_value=(True, "")), patch("research.post_json", return_value={"message": {"content": "Token alignment [1]."}}):
             result = self.client.post(path, json={"question": "How does attention work?", "revision": 0})
         self.assertEqual(result.status_code, 201)
         self.assertEqual(result.json["title"], "How does attention work?")
@@ -54,7 +54,7 @@ class ChatsTest(unittest.TestCase):
     def test_follow_up_uses_saved_history_and_only_selected_pdf(self):
         thread = self.client.post(self.first).json
         path = self.first + "/" + thread["id"]
-        with patch("research.post_json", return_value={"message": {"content": "The saved answer."}}) as model:
+        with patch("research.Research._route", return_value=(True, "")), patch("research.post_json", return_value={"message": {"content": "The saved answer."}}) as model:
             self.client.post(path, json={"question": "Explain attention", "revision": 0})
             next_turn = self.client.post(path, json={"question": "What does attention align?", "revision": 1})
         self.assertEqual(next_turn.status_code, 201)

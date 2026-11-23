@@ -80,7 +80,7 @@ class WeeklyTest(unittest.TestCase):
         (location / "other.pdf").write_bytes(article("Other paper", "Attention guards a castle."))
         settings = replace(self.settings, ollama_model="test-model")
         client = create_app(settings).test_client()
-        with patch("research.post_json", return_value={"message": {"content": "Alignment [1]."}}) as model:
+        with patch("research.Research._route", return_value=(True, "")), patch("research.post_json", return_value={"message": {"content": "Alignment [1]."}}) as model:
             answer = client.post("/api/ask", json={
                 "question": "What does attention yield?",
                 "file": "model-paper.pdf",

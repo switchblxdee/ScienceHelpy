@@ -151,7 +151,7 @@ function renderConversation(animateReply = false) {
     progress.replaceChildren();
     if (loading) progress.append(bubble("reply", "Загружаем историю…"));
     if (current) {
-      const waiting = bubble("reply", "Ищем ответ в статье…");
+      const waiting = bubble("reply", "Готовлю ответ…");
       waiting.classList.add("waiting", "chat-arrival");
       progress.append(bubble("user", current), waiting);
     }
